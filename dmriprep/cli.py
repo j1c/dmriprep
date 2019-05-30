@@ -7,9 +7,13 @@ import warnings
 
 import click
 
+from bids import BIDSLayout
+from niworkflows.utils.bids import collect_participants
+
 from . import io
 from . import run
 from .data import get_dataset
+from .workflows.base import init_dmriprep_wf
 
 # Filter warnings that are visible whenever you import another package that
 # was compiled against an older numpy than is installed.
@@ -26,6 +30,14 @@ warnings.filterwarnings("ignore", message="numpy.ufunc size changed")
                    "all subjects will be analyzed. Multiple participants"
                    "can be specified with a space separated list.",
               default=None)
+@click.option('--work',
+              help="Path to work directory. If not specified, will default to "
+                   "'scratch' in ouput directory.",
+              type=(str))
+@click.option('--ignore-fmaps',
+              help="Ignore using fieldmaps for susceptibility distortion "
+                   "correction.",
+              default=False)
 @click.option('--eddy-niter',
               help="Fixed number of eddy iterations. See "
                    "https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/eddy/UsersGuide"
@@ -39,6 +51,10 @@ warnings.filterwarnings("ignore", message="numpy.ufunc size changed")
                    "(exclusive) is provided, it is treated the fraction of "
                    "allowed outlier slices.",
               default=0.02)
+@click.option('--freesurfer-dir',
+              help="Path to freesurfer directory if not stored within BIDS "
+                   "folder.",
+              type=(str))
 @click.argument('bids_dir',
                 )
 @click.argument('output_dir',
@@ -46,7 +62,7 @@ warnings.filterwarnings("ignore", message="numpy.ufunc size changed")
 @click.argument('analysis_level',
                 type=click.Choice(['participant', 'group']),
                 default='participant')
-def main(participant_label, bids_dir, output_dir,
+def main(participant_label, bids_dir, output_dir, freesurfer_dir,
          eddy_niter=5, slice_outlier_threshold=0.02,
          analysis_level="participant"):
     """
@@ -66,14 +82,33 @@ def main(participant_label, bids_dir, output_dir,
         raise NotImplementedError('The only valid analysis level for dmriprep '
                                   'is participant at the moment.')
 
-    inputs = io.get_bids_files(participant_label, bids_dir)
+    bids_dir = os.path.abspath(bids_dir)
+    layout = BIDSLayout(bids_dir, validate=False)
+    subject_list = collect_participants(layout, participant_label=participant_label)
 
-    for subject_inputs in inputs:
-        run.run_dmriprep_pe(**subject_inputs,
-                            working_dir=os.path.join(output_dir, 'scratch'),
-                            out_dir=output_dir,
-                            eddy_niter=eddy_niter,
-                            slice_outlier_threshold=slice_outlier_threshold)
+    if work:
+        work_dir = work
+    else:
+        work_dir = os.path.join(output_dir, 'scratch')
+
+    init_dmriprep_wf(
+        layout=layout,
+        subject_list=subject_list,
+        ignore=ignore,
+        use_syn=use_syn_sdc,
+        output_dir=output_dir,
+        work_dir=work_dir
+        freesurfer_dir=freesurfer_dir
+    )
+
+    # inputs = io.get_bids_files(participant_label, bids_dir)
+    #
+    # for subject_inputs in inputs:
+    #     run.run_dmriprep_pe(**subject_inputs,
+    #                         working_dir=os.path.join(output_dir, 'scratch'),
+    #                         out_dir=output_dir,
+    #                         eddy_niter=eddy_niter,
+    #                         slice_outlier_threshold=slice_outlier_threshold)
 
     return 0
 
