@@ -80,16 +80,16 @@ def get_parser():
 
     latest = check_latest()
     if latest is not None and currentv < latest:
-        print("""You are using dMRIPrep-%s, and a newer version of dMRIPrep is available: %s. 
-        Please check out our documentation about how and when to upgrade: 
+        print("""You are using dMRIPrep-%s, and a newer version of dMRIPrep is available: %s.
+        Please check out our documentation about how and when to upgrade:
         https://dmriprep.readthedocs.io/en/latest/faq.html#upgrading""" % (
             __version__, latest), file=sys.stderr)
 
     _blist = is_flagged()
     if _blist[0]:
         _reason = _blist[1] or 'unknown'
-        print("""WARNING: Version %s of dMRIPrep (current) has been FLAGGED (reason: %s). 
-        That means some severe flaw was found in it and we strongly 
+        print("""WARNING: Version %s of dMRIPrep (current) has been FLAGGED (reason: %s).
+        That means some severe flaw was found in it and we strongly
         discourage its usage.""" % (__version__, _reason), file=sys.stderr)
 
     return parser
@@ -168,10 +168,12 @@ def build_workflow(opts, retval):
     log_dir.mkdir(exist_ok=True, parents=True)
     work_dir.mkdir(exist_ok=True, parents=True)
 
-    uuid_dir = str(work_dir) + '/' + str(run_uuid)
-    if os.path.exists(uuid_dir):
-        shutil.rmtree(uuid_dir)
-    os.mkdir(uuid_dir)
+    # uuid_dir = str(work_dir) + '/' + str(run_uuid)
+    # if os.path.exists(uuid_dir):
+    #     shutil.rmtree(uuid_dir)
+    # os.mkdir(uuid_dir)
+
+    uuid_dir = work_dir
 
     # Single-subject pipeline
     wf = init_base_wf(

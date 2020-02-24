@@ -261,9 +261,11 @@ def topup_inputs_from_dwi_files(dwi_file, sesdir, spec_acqp, b0_vols, b0s, vol_l
         imain_data.append(b0_vol)
         ix = ix + 1
 
+    first_rev_ixs = [datain_lines.index(x) for x in set(datain_lines)]
+
     # Make a 4d series
     imain_output = sesdir + "/topup_imain.nii.gz"
-    imain_data_4d = [imain_vol[..., np.newaxis] for imain_vol in imain_data]
+    imain_data_4d = [imain_vol[..., np.newaxis] for imain_vol in [imain_data[i] for i in first_rev_ixs]]
     imain_img = nib.Nifti1Image(
         np.concatenate(imain_data_4d, 3), dwi_img.affine, dwi_img.header
     )
@@ -271,8 +273,12 @@ def topup_inputs_from_dwi_files(dwi_file, sesdir, spec_acqp, b0_vols, b0s, vol_l
     imain_img.to_filename(imain_output)
 
     # Write the datain text file
-    datain_file = sesdir + "/acqparams.txt"
-    with open(datain_file, "w") as f:
+    datain_file_topup = sesdir + "/acqparams_topup.txt"
+    with open(datain_file_topup, "w") as f:
+        f.write("\n".join([datain_lines[i] for i in first_rev_ixs]))
+
+    datain_file_eddy = sesdir + "/acqparams_eddy.txt"
+    with open(datain_file_eddy, "w") as f:
         f.write("\n".join(datain_lines))
 
     example_b0 = b0_vols[0]
@@ -289,8 +295,25 @@ def topup_inputs_from_dwi_files(dwi_file, sesdir, spec_acqp, b0_vols, b0s, vol_l
         copyfile(topup_config, topup_config_tmp)
         topup_config = topup_config_tmp
 
-    return datain_file, imain_output, example_b0, datain_lines, topup_config, susceptibility_args
+    return datain_file_topup, datain_file_eddy, imain_output, example_b0, datain_lines, topup_config, susceptibility_args
 
+
+def save_3d_to_4d(in_files):
+    img_4d = nib.funcs.concat_images([nib.load(img_3d) for img_3d in in_files])
+    out_file = fname_presuffix(in_files[0], suffix="_merged")
+    img_4d.to_filename(out_file)
+    del img_4d
+    return out_file
+
+def save_4d_to_3d(in_file):
+    files_3d = nib.four_to_three(nib.load(in_file))
+    out_files = []
+    for i, file_3d in enumerate(files_3d):
+        out_file = fname_presuffix(in_file, suffix="_tmp_{}".format(i))
+        file_3d.to_filename(out_file)
+        out_files.append(out_file)
+    del files_3d
+    return out_files
 
 def eddy_inputs_from_dwi_files(sesdir, gtab_file):
     from dipy.io import load_pickle

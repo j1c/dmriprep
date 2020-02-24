@@ -28,6 +28,7 @@ def init_dwi_preproc_wf(
     from dmriprep.interfaces import fsl_extensions
     from dmriprep.utils import core, qc
     from shutil import which
+    from dmriprep.interfaces.register import Register, ApplyAffine
 
     import_list = [
         "import sys",
@@ -228,7 +229,8 @@ def init_dwi_preproc_wf(
         niu.Function(
             input_names=["dwi_file", "sesdir", "spec_acqp", "b0_vols", "b0s", "vol_legend"],
             output_names=[
-                "datain_file",
+                "datain_file_topup",
+                "datain_file_eddy",
                 "imain_output",
                 "example_b0",
                 "datain_lines",
@@ -254,11 +256,12 @@ def init_dwi_preproc_wf(
     get_eddy_inputs_node._mem_gb = 0.5
 
     # Run TOPUP
-    topup_node = pe.Node(fsl.TOPUP(), name="topup")
-    topup_node._mem_gb = 14
-    topup_node.n_procs = 8
-    topup_node.interface.mem_gb = 14
-    topup_node.interface.n_procs = 8
+    if sdc_method == 'topup':
+        topup_node = pe.Node(fsl.TOPUP(), name="topup")
+        topup_node._mem_gb = 14
+        topup_node.n_procs = 8
+        topup_node.interface.mem_gb = 14
+        topup_node.interface.n_procs = 8
 
     # Run BET on mean b0 of TOPUP-corrected output
     make_mean_b0_node = pe.Node(
@@ -345,6 +348,59 @@ def init_dwi_preproc_wf(
         name="drop_outliers_from_eddy_report",
     )
     drop_outliers_from_eddy_report_node._mem_gb = 1
+
+    split_raw_dwis_node = pe.Node(
+        niu.Function(
+            input_names=["in_file"],
+            output_names=["out_files"],
+            function=core.save_4d_to_3d,
+            imports=import_list,
+        ),
+        name="split_raw_dwis_node",
+    )
+
+    split_eddy_dwis_node = pe.Node(
+        niu.Function(
+            input_names=["in_file"],
+            output_names=["out_files"],
+            function=core.save_4d_to_3d,
+            imports=import_list,
+        ),
+        name="split_eddy_dwis_node",
+    )
+
+    split_sigma_node = pe.Node(
+        niu.Function(
+            input_names=["in_file"],
+            output_names=["out_files"],
+            function=core.save_4d_to_3d,
+            imports=import_list,
+        ),
+        name="split_sigma_node",
+    )
+
+    merge_sigma = pe.Node(
+        niu.Function(
+            input_names=["in_files"],
+            output_names=["out_file"],
+            function=core.save_3d_to_4d,
+            imports=import_list,
+        ),
+        name="merge_sigma",
+    )
+
+    register_to_eddy_out = pe.MapNode(Register(),
+        iterfield=['moving_image', 'static_image'],
+        name="register_to_eddy_out",
+    )
+    register_to_eddy_out.synchronize = True
+
+    resample_sigma = pe.MapNode(
+        ApplyAffine(),
+        iterfield=['moving_image', 'transform_affine'],
+        name="resample_sigma",
+    )
+    resample_sigma.synchronize = True
 
     denoise_node = pe.Node(
         niu.Function(
@@ -437,11 +493,22 @@ def init_dwi_preproc_wf(
                 (estimate_noise_node, drop_outliers_from_eddy_report_node, [("sigma_path", "in_sigma")]),
                 (drop_outliers_fn_node, drop_outliers_from_eddy_report_node, [("out_bval", "in_bval")]),
                 (drop_outliers_from_eddy_report_node, apply_mask_node, [("out_file", "in_file")]),
+
+                # Resample sigma noise map based on eddy transformations
+                (drop_outliers_from_eddy_report_node, split_eddy_dwis_node, [("out_file", "in_file")]),
+                (suppress_gibbs_node, split_raw_dwis_node, [("gibbs_free_file", "in_file")]),
+                (split_eddy_dwis_node, register_to_eddy_out, [("out_files", "fixed_image")]),
+                (split_raw_dwis_node, register_to_eddy_out, [("out_files", "moving_image")]),
+                (register_to_eddy_out, resample_sigma, [("forward_transforms", "transform_affine")]),
+                (drop_outliers_from_eddy_report_node, split_sigma_node, [("out_sigma", "in_file")]),
+                (split_sigma_node, resample_sigma, [("out_files", "moving_image")]),
+                (resample_sigma, merge_sigma, [("warped_image", "in_files")]),
+                (merge_sigma, denoise_node, [("out_file", "sigma_path")]),
+
                 (btr_node, apply_mask_node, [("mask_file", "mask_file")]),
                 (inputnode, denoise_node, [("sesdir", "sesdir"),
                                            ('omp_nthreads', 'omp_nthreads'),
                                            ("denoise_strategy", "denoise_strategy")]),
-                (drop_outliers_from_eddy_report_node, denoise_node, [("out_sigma", "sigma_path")]),
                 (btr_node, denoise_node, [("mask_file", "mask")]),
                 (make_gtab_node_final, denoise_node, [("gtab_file", "gtab_file")]),
                 (apply_mask_node, denoise_node, [("out_file", "in_file")]),
@@ -515,15 +582,27 @@ def init_dwi_preproc_wf(
                                                                      ("b0s", "b0s")]),
             (extract_metadata_node, get_topup_inputs_node, [("spec_acqps", "spec_acqp"),
                                                             ("vol_legend", "vol_legend")]),
-            (get_topup_inputs_node, topup_node, [("datain_file", "encoding_file"),
+            (get_topup_inputs_node, topup_node, [("datain_file_topup", "encoding_file"),
                                                  ("imain_output", "in_file"),
                                                  ("topup_config", "config")]),
             (topup_node, make_mean_b0_node, [("out_corrected", "in_file")]),
             (topup_node, eddy_node, [("out_movpar", "in_topup_movpar"),
                                      ("out_fieldcoef", "in_topup_fieldcoef")]),
-            (get_topup_inputs_node, eddy_node, [("datain_file", "in_acqp"), ("susceptibility_args", "args")]),
+            (get_topup_inputs_node, eddy_node, [("datain_file_eddy", "in_acqp"), ("susceptibility_args", "args")]),
             (topup_node, eddy_quad, [("out_field", "field")]),
-            (get_topup_inputs_node, eddy_quad, [("datain_file", "param_file")]),
+            (get_topup_inputs_node, eddy_quad, [("datain_file_eddy", "param_file")]),
+        ])
+    else:
+        wf.connect([
+            (drop_outliers_fn_node, get_topup_inputs_node, [("out_file", "dwi_file")]),
+            (inputnode, get_topup_inputs_node, [("sesdir", "sesdir")]),
+            (correct_vecs_and_make_b0s_node, get_topup_inputs_node, [("b0_vols", "b0_vols"),
+                                                                     ("b0s", "b0s")]),
+            (extract_metadata_node, get_topup_inputs_node, [("spec_acqps", "spec_acqp"),
+                                                            ("vol_legend", "vol_legend")]),
+            (drop_outliers_fn_node, make_mean_b0_node, [("out_file", "in_file")]),
+            (get_topup_inputs_node, eddy_node, [("datain_file_eddy", "in_acqp"), ("susceptibility_args", "args")]),
+            (get_topup_inputs_node, eddy_quad, [("datain_file_eddy", "param_file")]),
         ])
 
     return wf
@@ -747,10 +826,11 @@ def init_base_wf(
             wf.get_node(wf_dwi_preproc.name).get_node('MergeDWIs')._mem_gb = 1
             wf.get_node(wf_dwi_preproc.name).get_node('MergeDWIs').interface._mem_gb = 1
 
-            wf.get_node(wf_dwi_preproc.name).get_node('topup')._n_procs = 8
-            wf.get_node(wf_dwi_preproc.name).get_node('topup')._mem_gb = 14
-            wf.get_node(wf_dwi_preproc.name).get_node('topup').interface.n_procs = 8
-            wf.get_node(wf_dwi_preproc.name).get_node('topup').interface.mem_gb = 14
+            if sdc_method == 'topup':
+                wf.get_node(wf_dwi_preproc.name).get_node('topup')._n_procs = 8
+                wf.get_node(wf_dwi_preproc.name).get_node('topup')._mem_gb = 14
+                wf.get_node(wf_dwi_preproc.name).get_node('topup').interface.n_procs = 8
+                wf.get_node(wf_dwi_preproc.name).get_node('topup').interface.mem_gb = 14
             wf.get_node(wf_dwi_preproc.name).get_node('Bias_b0')._n_procs = omp_nthreads
             wf.get_node(wf_dwi_preproc.name).get_node('Bias_b0')._mem_gb = omp_nthreads*4
             wf.get_node(wf_dwi_preproc.name).get_node('Bias_b0').interface.n_procs = omp_nthreads
@@ -772,8 +852,8 @@ def init_base_wf(
 
         cfg = dict(execution={'stop_on_first_crash': False, 'crashfile_format': 'txt', 'parameterize_dirs': True,
                               'display_variable': ':0', 'job_finished_timeout': 120, 'matplotlib_backend': 'Agg',
-                              'plugin': 'MultiProc', 'use_relative_paths': True, 'remove_unnecessary_outputs': False,
-                              'remove_node_directories': False})
+                              'plugin': 'MultiProc', 'use_relative_paths': False, 'remove_unnecessary_outputs': False,
+                              'remove_node_directories': False, 'hash_method': 'content'})
         for key in cfg.keys():
             for setting, value in cfg[key].items():
                 wf.config[key][setting] = value
@@ -878,10 +958,11 @@ def wf_multi_session(bids_dict,
         wf_multi.get_node(wf.name).get_node('MergeDWIs')._mem_gb = 1
         wf_multi.get_node(wf.name).get_node('MergeDWIs').interface._mem_gb = 1
 
-        wf_multi.get_node(wf.name).get_node('topup')._n_procs = 8
-        wf_multi.get_node(wf.name).get_node('topup')._mem_gb = 14
-        wf_multi.get_node(wf.name).get_node('topup').interface.n_procs = 8
-        wf_multi.get_node(wf.name).get_node('topup').interface.mem_gb = 14
+        if sdc_method == 'topup':
+            wf_multi.get_node(wf.name).get_node('topup')._n_procs = 8
+            wf_multi.get_node(wf.name).get_node('topup')._mem_gb = 14
+            wf_multi.get_node(wf.name).get_node('topup').interface.n_procs = 8
+            wf_multi.get_node(wf.name).get_node('topup').interface.mem_gb = 14
         wf_multi.get_node(wf.name).get_node('Bias_b0')._n_procs = omp_nthreads
         wf_multi.get_node(wf.name).get_node('Bias_b0')._mem_gb = omp_nthreads*4
         wf_multi.get_node(wf.name).get_node('Bias_b0').interface.n_procs = omp_nthreads
@@ -1056,10 +1137,11 @@ def wf_multi_session(bids_dict,
         wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('MergeDWIs')._mem_gb = 1
         wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('MergeDWIs').interface._mem_gb = 1
 
-        wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('topup')._n_procs = 8
-        wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('topup')._mem_gb = 14
-        wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('topup').interface.n_procs = 8
-        wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('topup').interface.mem_gb = 14
+        if sdc_method == 'topup':
+            wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('topup')._n_procs = 8
+            wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('topup')._mem_gb = 14
+            wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('topup').interface.n_procs = 8
+            wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('topup').interface.mem_gb = 14
         wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('Bias_b0')._n_procs = omp_nthreads
         wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('Bias_b0')._mem_gb = omp_nthreads*4
         wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('Bias_b0').interface.n_procs = omp_nthreads
@@ -1080,8 +1162,8 @@ def wf_multi_session(bids_dict,
 
         cfg = dict(execution={'stop_on_first_crash': False, 'crashfile_format': 'txt', 'parameterize_dirs': True,
                               'display_variable': ':0', 'job_finished_timeout': 120, 'matplotlib_backend': 'Agg',
-                              'plugin': 'MultiProc', 'use_relative_paths': True, 'remove_unnecessary_outputs': False,
-                              'remove_node_directories': False})
+                              'plugin': 'MultiProc', 'use_relative_paths': False, 'remove_unnecessary_outputs': False,
+                              'remove_node_directories': False, 'hash_method': 'content'})
         for key in cfg.keys():
             for setting, value in cfg[key].items():
                 wf_multi.config[key][setting] = value

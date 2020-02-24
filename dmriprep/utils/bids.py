@@ -5,6 +5,7 @@ import warnings
 
 
 def get_bids_dict(layout, participant_label=None, session=None):
+
     def merge_dicts(x, y):
         """
         A function to merge two dictionaries, making it easier for us to make
@@ -33,8 +34,6 @@ def get_bids_dict(layout, participant_label=None, session=None):
     for sub in subjs:
         if not session:
             seshs = layout.get_sessions(subject=sub, derivatives=False)
-            # in case there are non-session level inputs
-            seshs += [None]
         else:
             # make a list so we can iterate
             if not isinstance(session, list):
@@ -59,19 +58,33 @@ def get_bids_dict(layout, participant_label=None, session=None):
             for attr, key in zip(mod_attributes, mod_keys):
                 if attr:
                     mod_query[key] = attr
-                    
+
             dwi = layout.get(**merge_dicts(mod_query, {'extension': ['nii', 'nii.gz']}))
             bval = layout.get(**merge_dicts(mod_query, {'extension': 'bval'}))
             bvec = layout.get(**merge_dicts(mod_query, {'extension': 'bvec'}))
             jso = layout.get(**merge_dicts(mod_query, {'extension': 'json'}))
 
-            bids_dict[sub][ses] = {}
+            if dwi is None:
+                continue
+            else:
+                bids_dict[sub][ses] = {}
+
             for acq_ix in range(1, len(dwi) + 1):
                 bids_dict[sub][ses][acq_ix] = {}
                 bids_dict[sub][ses][acq_ix]['dwi_file'] = dwi[acq_ix - 1].path
                 bids_dict[sub][ses][acq_ix]['fbval'] = bval[acq_ix - 1].path
                 bids_dict[sub][ses][acq_ix]['fbvec'] = bvec[acq_ix - 1].path
                 bids_dict[sub][ses][acq_ix]['metadata'] = jso[acq_ix - 1].path
+
+    for sub in list(bids_dict.keys()):
+        if bids_dict[sub] == {}:
+            del bids_dict[sub]
+            continue
+        for ses in list(bids_dict[sub].keys()):
+            if bids_dict[sub][ses] == {}:
+                del bids_dict[sub][ses]
+
+    print(bids_dict)
     return bids_dict
 
 
