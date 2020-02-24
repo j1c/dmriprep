@@ -216,9 +216,29 @@ def correct_vecs_and_make_b0s(fbval, fbvec, dwi_file, sesdir):
     all_b0s_aff = dwi_img.affine.copy()
     all_b0s_aff[3][3] = len(b0_vols)
     nib.save(nib.Nifti1Image(all_b0s, affine=all_b0s_aff), all_b0s_file)
-    initial_mean_b0 = make_mean_b0(all_b0s_file)
+    mean_b0 = make_mean_b0(all_b0s_file)
 
-    return initial_mean_b0, gtab_file, b0_vols, b0s, slm
+    return mean_b0, gtab_file, slm
+
+
+def get_b0s(dwi_file, gtab_file):
+    from dipy.io import load_pickle
+
+    gtab = load_pickle(gtab_file)
+
+    # Get b0 indices
+    b0s = np.where(gtab.bvals <= gtab.b0_threshold)[0].tolist()
+    print("%s%s" % ("b0's found at: ", b0s))
+
+    # Extract and Combine all b0s collected
+    print("Extracting b0's...")
+    b0_vols = []
+    dwi_img = nib.load(dwi_file)
+    dwi_data = dwi_img.get_data()
+    for b0 in b0s:
+        print(b0)
+        b0_vols.append(dwi_data[:, :, :, b0])
+    return b0_vols, b0s
 
 
 def topup_inputs_from_dwi_files(dwi_file, sesdir, spec_acqp, b0_vols, b0s, vol_legend):
@@ -301,6 +321,7 @@ def topup_inputs_from_dwi_files(dwi_file, sesdir, spec_acqp, b0_vols, b0s, vol_l
 
 
 def save_3d_to_4d(in_files):
+    from nipype.utils.filemanip import fname_presuffix
     img_4d = nib.funcs.concat_images([nib.load(img_3d) for img_3d in in_files])
     out_file = fname_presuffix(in_files[0], suffix="_merged")
     img_4d.to_filename(out_file)
@@ -308,6 +329,7 @@ def save_3d_to_4d(in_files):
     return out_file
 
 def save_4d_to_3d(in_file):
+    from nipype.utils.filemanip import fname_presuffix
     files_3d = nib.four_to_three(nib.load(in_file))
     out_files = []
     for i, file_3d in enumerate(files_3d):

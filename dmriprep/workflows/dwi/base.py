@@ -101,11 +101,22 @@ def init_dwi_preproc_wf(
     correct_vecs_and_make_b0s_node = pe.Node(
         niu.Function(
             input_names=["fbval", "fbvec", "dwi_file", "sesdir"],
-            output_names=["initial_mean_b0", "gtab_file", "b0_vols", "b0s", "slm"],
+            output_names=["mean_b0", "gtab_file", "slm"],
             function=core.correct_vecs_and_make_b0s,
             imports=import_list,
         ),
         name="correct_vecs_and_make_b0s",
+    )
+    correct_vecs_and_make_b0s_node._mem_gb = 1
+
+    get_b0s_node = pe.Node(
+        niu.Function(
+            input_names=["gtab_file", "dwi_file"],
+            output_names=["b0_vols", "b0s"],
+            function=core.get_b0s,
+            imports=import_list,
+        ),
+        name="get_b0s",
     )
     correct_vecs_and_make_b0s_node._mem_gb = 1
 
@@ -358,6 +369,7 @@ def init_dwi_preproc_wf(
         ),
         name="split_raw_dwis_node",
     )
+    split_raw_dwis_node._mem_gb = 1
 
     split_eddy_dwis_node = pe.Node(
         niu.Function(
@@ -368,6 +380,7 @@ def init_dwi_preproc_wf(
         ),
         name="split_eddy_dwis_node",
     )
+    split_eddy_dwis_node._mem_gb = 1
 
     split_sigma_node = pe.Node(
         niu.Function(
@@ -378,6 +391,7 @@ def init_dwi_preproc_wf(
         ),
         name="split_sigma_node",
     )
+    split_sigma_node._mem_gb = 1
 
     merge_sigma = pe.Node(
         niu.Function(
@@ -388,12 +402,14 @@ def init_dwi_preproc_wf(
         ),
         name="merge_sigma",
     )
+    merge_sigma._mem_gb = 1
 
     register_to_eddy_out = pe.MapNode(Register(),
         iterfield=['moving_image', 'static_image'],
         name="register_to_eddy_out",
     )
     register_to_eddy_out.synchronize = True
+    register_to_eddy_out._mem_gb = 1
 
     resample_sigma = pe.MapNode(
         ApplyAffine(),
@@ -401,6 +417,7 @@ def init_dwi_preproc_wf(
         name="resample_sigma",
     )
     resample_sigma.synchronize = True
+    resample_sigma._mem_gb = 1
 
     denoise_node = pe.Node(
         niu.Function(
@@ -448,11 +465,11 @@ def init_dwi_preproc_wf(
                                                              ("sesdir", "sesdir")]),
                 (check_orient_and_dims_dwi_node, correct_vecs_and_make_b0s_node, [("bvecs", "fbvec"),
                                                                                   ("outfile", "dwi_file")]),
-                (correct_vecs_and_make_b0s_node, btr_node_premoco, [("initial_mean_b0", "in_file")]),
+                (correct_vecs_and_make_b0s_node, btr_node_premoco, [("mean_b0", "in_file")]),
                 (btr_node_premoco, apply_mask_premoco_node, [("mask_file", "mask_file")]),
                 (check_orient_and_dims_dwi_node, apply_mask_premoco_node, [("outfile", "in_file")]),
                 (apply_mask_premoco_node, fsl_split_node, [("out_file", "in_file")]),
-                (correct_vecs_and_make_b0s_node, coreg, [("initial_mean_b0", "reference")]),
+                (correct_vecs_and_make_b0s_node, coreg, [("mean_b0", "reference")]),
                 (fsl_split_node, coreg, [("out_files", "in_file")]),
                 (coreg, get_motion_params_node, [("out_matrix_file", "flirt_mats")]),
                 (coreg, fsl_merge_node, [("out_file", "in_files")]),
@@ -475,6 +492,8 @@ def init_dwi_preproc_wf(
                 (inputnode, extract_metadata_node, [("metadata", "metadata")]),
                 (make_gtab_node, check_shelled_node, [("gtab_file", "gtab_file")]),
                 (inputnode, get_eddy_inputs_node, [("sesdir", "sesdir")]),
+                (make_gtab_node, get_b0s_node, [("gtab_file", "gtab_file")]),
+                (suppress_gibbs_node, get_b0s_node, [("gibbs_free_file", "dwi_file")]),
                 (make_gtab_node, get_eddy_inputs_node, [("gtab_file", "gtab_file")]),
                 (extract_metadata_node, get_eddy_inputs_node, [("spec_acqps", "spec_acqp")]),
                 (make_mean_b0_node, btr_node, [("mean_file_out", "in_file")]),
@@ -578,8 +597,8 @@ def init_dwi_preproc_wf(
         wf.connect([
             (drop_outliers_fn_node, get_topup_inputs_node, [("out_file", "dwi_file")]),
             (inputnode, get_topup_inputs_node, [("sesdir", "sesdir")]),
-            (correct_vecs_and_make_b0s_node, get_topup_inputs_node, [("b0_vols", "b0_vols"),
-                                                                     ("b0s", "b0s")]),
+            (get_b0s_node, get_topup_inputs_node, [("b0_vols", "b0_vols"),
+                                                   ("b0s", "b0s")]),
             (extract_metadata_node, get_topup_inputs_node, [("spec_acqps", "spec_acqp"),
                                                             ("vol_legend", "vol_legend")]),
             (get_topup_inputs_node, topup_node, [("datain_file_topup", "encoding_file"),
@@ -596,8 +615,8 @@ def init_dwi_preproc_wf(
         wf.connect([
             (drop_outliers_fn_node, get_topup_inputs_node, [("out_file", "dwi_file")]),
             (inputnode, get_topup_inputs_node, [("sesdir", "sesdir")]),
-            (correct_vecs_and_make_b0s_node, get_topup_inputs_node, [("b0_vols", "b0_vols"),
-                                                                     ("b0s", "b0s")]),
+            (get_b0s_node, get_topup_inputs_node, [("b0_vols", "b0_vols"),
+                                                   ("b0s", "b0s")]),
             (extract_metadata_node, get_topup_inputs_node, [("spec_acqps", "spec_acqp"),
                                                             ("vol_legend", "vol_legend")]),
             (drop_outliers_fn_node, make_mean_b0_node, [("out_file", "in_file")]),
@@ -825,6 +844,18 @@ def init_base_wf(
             wf.get_node(wf_dwi_preproc.name).get_node('RemoveNegative').interface._mem_gb = 1
             wf.get_node(wf_dwi_preproc.name).get_node('MergeDWIs')._mem_gb = 1
             wf.get_node(wf_dwi_preproc.name).get_node('MergeDWIs').interface._mem_gb = 1
+            wf.get_node(wf_dwi_preproc.name).get_node('split_raw_dwis_node').interface._mem_gb = 1
+            wf.get_node(wf_dwi_preproc.name).get_node('split_raw_dwis_node')._mem_gb = 1
+            wf.get_node(wf_dwi_preproc.name).get_node('split_eddy_dwis_node').interface._mem_gb = 1
+            wf.get_node(wf_dwi_preproc.name).get_node('split_eddy_dwis_node')._mem_gb = 1
+            wf.get_node(wf_dwi_preproc.name).get_node('split_sigma_node').interface._mem_gb = 1
+            wf.get_node(wf_dwi_preproc.name).get_node('split_sigma_node')._mem_gb = 1
+            wf.get_node(wf_dwi_preproc.name).get_node('merge_sigma').interface._mem_gb = 1
+            wf.get_node(wf_dwi_preproc.name).get_node('merge_sigma')._mem_gb = 1
+            wf.get_node(wf_dwi_preproc.name).get_node('register_to_eddy_out').interface._mem_gb = 1
+            wf.get_node(wf_dwi_preproc.name).get_node('register_to_eddy_out')._mem_gb = 1
+            wf.get_node(wf_dwi_preproc.name).get_node('resample_sigma').interface._mem_gb = 1
+            wf.get_node(wf_dwi_preproc.name).get_node('resample_sigma')._mem_gb = 1
 
             if sdc_method == 'topup':
                 wf.get_node(wf_dwi_preproc.name).get_node('topup')._n_procs = 8
@@ -957,6 +988,18 @@ def wf_multi_session(bids_dict,
         wf_multi.get_node(wf.name).get_node('RemoveNegative').interface._mem_gb = 1
         wf_multi.get_node(wf.name).get_node('MergeDWIs')._mem_gb = 1
         wf_multi.get_node(wf.name).get_node('MergeDWIs').interface._mem_gb = 1
+        wf_multi.get_node(wf.name).get_node('split_raw_dwis_node').interface._mem_gb = 1
+        wf_multi.get_node(wf.name).get_node('split_raw_dwis_node')._mem_gb = 1
+        wf_multi.get_node(wf.name).get_node('split_eddy_dwis_node').interface._mem_gb = 1
+        wf_multi.get_node(wf.name).get_node('split_eddy_dwis_node')._mem_gb = 1
+        wf_multi.get_node(wf.name).get_node('split_sigma_node').interface._mem_gb = 1
+        wf_multi.get_node(wf.name).get_node('split_sigma_node')._mem_gb = 1
+        wf_multi.get_node(wf.name).get_node('merge_sigma').interface._mem_gb = 1
+        wf_multi.get_node(wf.name).get_node('merge_sigma')._mem_gb = 1
+        wf_multi.get_node(wf.name).get_node('register_to_eddy_out').interface._mem_gb = 1
+        wf_multi.get_node(wf.name).get_node('register_to_eddy_out')._mem_gb = 1
+        wf_multi.get_node(wf.name).get_node('resample_sigma').interface._mem_gb = 1
+        wf_multi.get_node(wf.name).get_node('resample_sigma')._mem_gb = 1
 
         if sdc_method == 'topup':
             wf_multi.get_node(wf.name).get_node('topup')._n_procs = 8
@@ -1136,6 +1179,18 @@ def wf_multi_session(bids_dict,
         wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('RemoveNegative').interface._mem_gb = 1
         wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('MergeDWIs')._mem_gb = 1
         wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('MergeDWIs').interface._mem_gb = 1
+        wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('split_raw_dwis_node').interface._mem_gb = 1
+        wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('split_raw_dwis_node')._mem_gb = 1
+        wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('split_eddy_dwis_node').interface._mem_gb = 1
+        wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('split_eddy_dwis_node')._mem_gb = 1
+        wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('split_sigma_node').interface._mem_gb = 1
+        wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('split_sigma_node')._mem_gb = 1
+        wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('merge_sigma').interface._mem_gb = 1
+        wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('merge_sigma')._mem_gb = 1
+        wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('register_to_eddy_out').interface._mem_gb = 1
+        wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('register_to_eddy_out')._mem_gb = 1
+        wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('resample_sigma').interface._mem_gb = 1
+        wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('resample_sigma')._mem_gb = 1
 
         if sdc_method == 'topup':
             wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('topup')._n_procs = 8
