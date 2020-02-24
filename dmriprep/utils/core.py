@@ -263,19 +263,21 @@ def topup_inputs_from_dwi_files(dwi_file, sesdir, spec_acqp, b0_vols, b0s, vol_l
 
     first_rev_ixs = [datain_lines.index(x) for x in set(datain_lines)]
 
+    topup_datain_lines = [datain_lines[i] for i in first_rev_ixs]
+
     # Make a 4d series
     imain_output = sesdir + "/topup_imain.nii.gz"
     imain_data_4d = [imain_vol[..., np.newaxis] for imain_vol in [imain_data[i] for i in first_rev_ixs]]
     imain_img = nib.Nifti1Image(
         np.concatenate(imain_data_4d, 3), dwi_img.affine, dwi_img.header
     )
-    assert imain_img.shape[3] == len(datain_lines)
+    assert imain_img.shape[3] == len(topup_datain_lines)
     imain_img.to_filename(imain_output)
 
     # Write the datain text file
     datain_file_topup = sesdir + "/acqparams_topup.txt"
     with open(datain_file_topup, "w") as f:
-        f.write("\n".join([datain_lines[i] for i in first_rev_ixs]))
+        f.write("\n".join(topup_datain_lines))
 
     datain_file_eddy = sesdir + "/acqparams_eddy.txt"
     with open(datain_file_eddy, "w") as f:
