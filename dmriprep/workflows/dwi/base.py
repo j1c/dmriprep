@@ -157,9 +157,9 @@ def init_dwi_preproc_wf(
     art_node.inputs.use_differences = [True, True]
     art_node.inputs.save_plot = False
     art_node.inputs.use_norm = True
-    # scan-to-scan head-motion composite changes
+    # scan-to-scan head-motion composite changes (pretty conservative)
     art_node.inputs.norm_threshold = 3
-    # z-score scan-to-scan global signal changes
+    # z-score scan-to-scan global signal changes (pretty conservative)
     art_node.inputs.zintensity_threshold = 9
     art_node.inputs.mask_type = "spm_global"
     art_node.inputs.parameter_source = "FSL"
@@ -306,7 +306,6 @@ def init_dwi_preproc_wf(
         ),
         name="make_basename",
     )
-    btr_node._mem_gb = 0.5
 
     # Handle gpu case
     try:
@@ -453,7 +452,7 @@ def init_dwi_preproc_wf(
 
     outputnode = pe.Node(
         niu.IdentityInterface(fields=["preprocessed_data", "final_bvec", "final_bval",
-                                      "out_eddy_quad_pdf", "out_eddy_quad_json"]),
+                                      "out_eddy_quad_pdf", "out_eddy_quad_json", "out_mask"]),
         name="outputnode",
     )
 
@@ -544,12 +543,18 @@ def init_dwi_preproc_wf(
                 (btr_node, eddy_quad, [("mask_file", "mask_file")]),
                 (get_eddy_inputs_node, eddy_quad, [("index_file", "idx_file")]),
                 (eddy_quad, outputnode, [('qc_json', 'out_eddy_quad_json'),
-                                         ('qc_pdf', 'out_eddy_quad_pdf')])
+                                         ('qc_pdf', 'out_eddy_quad_pdf')]),
+                (btr_node, outputnode, [("mask_file", "out_mask")]),
                 ])
+
+    apply_mask_final_node = pe.Node(fsl.ApplyMask(), name="apply_mask_final")
+    apply_mask_final_node._mem_gb = 1
 
     if no_ants is True:
         wf.connect([
-            (denoise_node, rename_final_preprocessed_file_node, [("denoised_file", "in_file")]),
+            (denoise_node, apply_mask_final_node, [("denoised_file", "in_file")]),
+            (btr_node, apply_mask_final_node, [("mask_file", "in_file")]),
+            (apply_mask_final_node, rename_final_preprocessed_file_node, [("out_file", "in_file")]),
             (rename_final_preprocessed_file_node, outputnode, [("out_file", "preprocessed_data")])
         ])
     else:
@@ -583,7 +588,9 @@ def init_dwi_preproc_wf(
             (split, mult, [('out_files', 'in_file')]),
             (mult, thres, [('out_file', 'in_file')]),
             (thres, merge, [('out_file', 'in_files')]),
-            (merge, rename_final_preprocessed_file_node, [('merged_file', "in_file")]),
+            (merge, apply_mask_final_node, [("merged_file", "in_file")]),
+            (btr_node, apply_mask_final_node, [("mask_file", "in_file")]),
+            (apply_mask_final_node, rename_final_preprocessed_file_node, [("out_file", "in_file")]),
             (rename_final_preprocessed_file_node, outputnode, [("out_file", "preprocessed_data")])
         ])
 
@@ -834,6 +841,8 @@ def init_base_wf(
             wf.get_node(wf_dwi_preproc.name).get_node('make_gtab_final')._mem_gb = 1
             wf.get_node(wf_dwi_preproc.name).get_node('apply_mask')._mem_gb = 1
             wf.get_node(wf_dwi_preproc.name).get_node('apply_mask').interface._mem_gb = 1
+            wf.get_node(wf_dwi_preproc.name).get_node('apply_mask_final')._mem_gb = 1
+            wf.get_node(wf_dwi_preproc.name).get_node('apply_mask_final').interface._mem_gb = 1
             wf.get_node(wf_dwi_preproc.name).get_node('id_outliers_from_eddy_report')._mem_gb = 1
             wf.get_node(wf_dwi_preproc.name).get_node('drop_outliers_from_eddy_report')._mem_gb = 1
             wf.get_node(wf_dwi_preproc.name).get_node('SplitDWIs')._mem_gb = 1
@@ -978,6 +987,8 @@ def wf_multi_session(bids_dict,
         wf_multi.get_node(wf.name).get_node('make_gtab_final')._mem_gb = 1
         wf_multi.get_node(wf.name).get_node('apply_mask')._mem_gb = 1
         wf_multi.get_node(wf.name).get_node('apply_mask').interface._mem_gb = 1
+        wf_multi.get_node(wf.name).get_node('apply_mask_final')._mem_gb = 1
+        wf_multi.get_node(wf.name).get_node('apply_mask_final').interface._mem_gb = 1
         wf_multi.get_node(wf.name).get_node('id_outliers_from_eddy_report')._mem_gb = 1
         wf_multi.get_node(wf.name).get_node('drop_outliers_from_eddy_report')._mem_gb = 1
         wf_multi.get_node(wf.name).get_node('SplitDWIs')._mem_gb = 1
@@ -1169,6 +1180,8 @@ def wf_multi_session(bids_dict,
         wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('make_gtab_final')._mem_gb = 1
         wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('apply_mask')._mem_gb = 1
         wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('apply_mask').interface._mem_gb = 1
+        wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('apply_mask_final')._mem_gb = 1
+        wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('apply_mask_final').interface._mem_gb = 1
         wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('id_outliers_from_eddy_report')._mem_gb = 1
         wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('drop_outliers_from_eddy_report')._mem_gb = 1
         wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('SplitDWIs')._mem_gb = 1
