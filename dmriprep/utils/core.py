@@ -5,20 +5,19 @@ import numpy as np
 
 
 def make_gtab(fbval, fbvec, sesdir, final, b0_thr=100):
+    from nipype.utils.filemanip import fname_presuffix
     from dipy.io import save_pickle
     from dipy.core.gradients import gradient_table
     from dipy.io import read_bvals_bvecs
+    import uuid
+    from time import strftime
 
     if fbval and fbvec:
         bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
     else:
         raise ValueError("Either bvals or bvecs files not found (or rescaling failed)!")
 
-    namer_dir = sesdir + "/dmri_tmp"
-    if not os.path.isdir(namer_dir):
-        os.mkdir(namer_dir)
-
-    gtab_file = "%s%s" % (namer_dir, "/gtab.pkl")
+    gtab_file = fname_presuffix(fbval, suffix="_gtab_{}_{}.pkl".format(strftime('%Y%m%d_%H%M%S'), uuid.uuid4()), use_ext=False)
 
     # Creating the gradient table
     gtab = gradient_table(bvals, bvecs, atol=1)
@@ -291,7 +290,6 @@ def topup_inputs_from_dwi_files(dwi_file, sesdir, spec_acqp, b0_vols, b0s, vol_l
     imain_img = nib.Nifti1Image(
         np.concatenate(imain_data_4d, 3), dwi_img.affine, dwi_img.header
     )
-    assert imain_img.shape[3] == len(topup_datain_lines)
     imain_img.to_filename(imain_output)
 
     # Write the datain text file
@@ -338,6 +336,27 @@ def save_4d_to_3d(in_file):
         out_files.append(out_file)
     del files_3d
     return out_files
+
+
+def make_sigma_4d(sig_file, dwi_file):
+    from nipype.utils.filemanip import fname_presuffix
+    dwi_img = nib.load(dwi_file)
+    sig_arr = np.load(sig_file)
+    out_files = []
+    if len(sig_arr.shape) == 3:
+        for i in range(dwi_img.shape[-1]):
+            out_file = fname_presuffix(sig_file, suffix="_tmp_{}.nii.gz".format(i), use_ext=False)
+            nib.Nifti1Image(sig_arr, affine=dwi_img.affine).to_filename(out_file)
+            out_files.append(out_file)
+    else:
+        files_3d = nib.four_to_three(nib.Nifti1Image(sig_arr, affine=dwi_img.affine))
+        for i, file_3d in enumerate(files_3d):
+            out_file = fname_presuffix(sig_file, suffix="_tmp_{}.nii.gz".format(i), use_ext=False)
+            file_3d.to_filename(out_file)
+            out_files.append(out_file)
+        del files_3d
+    return out_files
+
 
 def eddy_inputs_from_dwi_files(sesdir, gtab_file):
     from dipy.io import load_pickle
@@ -512,6 +531,30 @@ def drop_outliers_fn(in_file, in_bval, in_bvec, drop_scans, in_sigma=None, perc_
     np.savetxt(out_bvec, bvec_thinned.astype('float'), fmt='%10f')
 
     return out_file, out_bval, out_bvec, out_sigma
+
+
+def drop_scans_from_4d(in_file, drop_scans):
+    import nibabel as nib
+    import numpy as np
+    import os.path as op
+    from nipype.utils.filemanip import fname_presuffix
+    img = nib.load(op.abspath(in_file))
+    img_data = img.get_data()
+    img_data_thinned = np.delete(img_data, drop_scans, axis=3)
+    if isinstance(img, nib.nifti1.Nifti1Image):
+        img_thinned = nib.Nifti1Image(
+            img_data_thinned.astype(np.float64), img.affine, header=img.header
+        )
+    elif isinstance(img, nib.nifti2.Nifti2Image):
+        img_thinned = nib.Nifti2Image(
+            img_data_thinned.astype(np.float64), img.affine, header=img.header
+        )
+    else:
+        raise TypeError("in_file does not contain Nifti image datatype.")
+
+    out_file = fname_presuffix(in_file, suffix="_thinned", newpath=op.abspath("."))
+    nib.save(img_thinned, op.abspath(out_file))
+    return out_file
 
 
 def get_params(A):
@@ -748,16 +791,25 @@ def denoise(
     mask_data = np.asarray(nib.load(mask).get_data(caching='unchanged'), dtype=np.bool)
 
     if sigma_path:
-        sigma = np.load(sigma_path)
+        if sigma_path.endswith('.npy'):
+            sigma = np.load(sigma_path)
+        elif sigma_path.endswith('.nii') or sigma_path.endswith('.nii.gz'):
+            sigma = nib.load(sigma_path).get_fdata()
+        else:
+            raise ValueError('Format of sigma array not recognized.')
+
+        sigma_3d = np.median(sigma, axis=-1)
+
         if denoise_strategy == "mppca":
+
             print('Running Marchenko-Pastur(MP) PCA denoising...')
-            img_data_den = genpca(img_data, sigma=sigma, mask=mask_data,
+            img_data_den = genpca(img_data, sigma=sigma_3d, mask=mask_data,
                                   patch_radius=patch_radius,
                                   pca_method='eig', tau_factor=None,
                                   return_sigma=False, out_dtype=None)
         elif denoise_strategy == "localpca":
             print('Running Local PCA denoising...')
-            img_data_den = genpca(img_data, sigma=sigma, mask=mask_data,
+            img_data_den = genpca(img_data, sigma=sigma_3d, mask=mask_data,
                                   patch_radius=patch_radius,
                                   pca_method='eig', tau_factor=tau_factor,
                                   return_sigma=False, out_dtype=None)
@@ -765,7 +817,7 @@ def denoise(
             print('Running Non-Local Means denoising...')
             img_data_den = nlmeans(
                 img_data,
-                sigma=sigma,
+                sigma=sigma_3d,
                 mask=mask_data,
                 patch_radius=patch_radius,
                 block_radius=block_radius,
@@ -789,7 +841,6 @@ def denoise(
                                             mask=mask_data, sigma=sigma, N=N)
 
             # Denoising
-            sigma_3d = np.median(sigma, axis=-1)
             block_size = np.array([3, 3, 3, 5])
             img_data_den = nlsam_denoise(data_stabilized, sigma_3d, gtab.bvals, gtab.bvecs, block_size,
                                          mask=mask_data, is_symmetric=False, subsample=True,

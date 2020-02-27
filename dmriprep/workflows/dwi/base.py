@@ -360,6 +360,17 @@ def init_dwi_preproc_wf(
     )
     drop_outliers_from_eddy_report_node._mem_gb = 1
 
+    drop_raw_outliers_from_eddy_report_node = pe.Node(
+        niu.Function(
+            input_names=["in_file", "drop_scans"],
+            output_names=["out_file"],
+            function=core.drop_scans_from_4d,
+            imports=import_list,
+        ),
+        name="drop_raw_outliers_from_eddy_report",
+    )
+    drop_raw_outliers_from_eddy_report_node._mem_gb = 1
+
     split_raw_dwis_node = pe.Node(
         niu.Function(
             input_names=["in_file"],
@@ -384,9 +395,9 @@ def init_dwi_preproc_wf(
 
     split_sigma_node = pe.Node(
         niu.Function(
-            input_names=["in_file"],
+            input_names=["sig_file", "dwi_file"],
             output_names=["out_files"],
-            function=core.save_4d_to_3d,
+            function=core.make_sigma_4d,
             imports=import_list,
         ),
         name="split_sigma_node",
@@ -404,8 +415,8 @@ def init_dwi_preproc_wf(
     )
     merge_sigma._mem_gb = 1
 
-    register_to_eddy_out = pe.MapNode(Register(),
-        iterfield=['moving_image', 'static_image'],
+    register_to_eddy_out = pe.MapNode(Register(sampling_prop=1),
+        iterfield=['moving_image', 'fixed_image'],
         name="register_to_eddy_out",
     )
     register_to_eddy_out.synchronize = True
@@ -413,7 +424,7 @@ def init_dwi_preproc_wf(
 
     resample_sigma = pe.MapNode(
         ApplyAffine(),
-        iterfield=['moving_image', 'transform_affine'],
+        iterfield=['moving_image', 'transform_affine', 'fixed_image'],
         name="resample_sigma",
     )
     resample_sigma.synchronize = True
@@ -515,12 +526,16 @@ def init_dwi_preproc_wf(
 
                 # Resample sigma noise map based on eddy transformations
                 (drop_outliers_from_eddy_report_node, split_eddy_dwis_node, [("out_file", "in_file")]),
-                (suppress_gibbs_node, split_raw_dwis_node, [("gibbs_free_file", "in_file")]),
+                (id_outliers_from_eddy_report_node, drop_raw_outliers_from_eddy_report_node, [("drop_scans", "drop_scans")]),
+                (suppress_gibbs_node, drop_raw_outliers_from_eddy_report_node, [("gibbs_free_file", "in_file")]),
+                (drop_raw_outliers_from_eddy_report_node, split_raw_dwis_node, [("out_file", "in_file")]),
                 (split_eddy_dwis_node, register_to_eddy_out, [("out_files", "fixed_image")]),
                 (split_raw_dwis_node, register_to_eddy_out, [("out_files", "moving_image")]),
                 (register_to_eddy_out, resample_sigma, [("forward_transforms", "transform_affine")]),
-                (drop_outliers_from_eddy_report_node, split_sigma_node, [("out_sigma", "in_file")]),
+                (drop_raw_outliers_from_eddy_report_node, split_sigma_node, [("out_file", "dwi_file")]),
+                (drop_outliers_from_eddy_report_node, split_sigma_node, [("out_sigma", "sig_file")]),
                 (split_sigma_node, resample_sigma, [("out_files", "moving_image")]),
+                (split_eddy_dwis_node, resample_sigma, [("out_files", "fixed_image")]),
                 (resample_sigma, merge_sigma, [("warped_image", "in_files")]),
                 (merge_sigma, denoise_node, [("out_file", "sigma_path")]),
 
@@ -836,6 +851,7 @@ def init_base_wf(
             wf.get_node(wf_dwi_preproc.name).get_node('apply_mask').interface._mem_gb = 1
             wf.get_node(wf_dwi_preproc.name).get_node('id_outliers_from_eddy_report')._mem_gb = 1
             wf.get_node(wf_dwi_preproc.name).get_node('drop_outliers_from_eddy_report')._mem_gb = 1
+            wf.get_node(wf_dwi_preproc.name).get_node('drop_raw_outliers_from_eddy_report')._mem_gb = 1
             wf.get_node(wf_dwi_preproc.name).get_node('SplitDWIs')._mem_gb = 1
             wf.get_node(wf_dwi_preproc.name).get_node('SplitDWIs').interface._mem_gb = 1
             wf.get_node(wf_dwi_preproc.name).get_node('RemoveBiasOfDWIs')._mem_gb = 1
@@ -980,6 +996,7 @@ def wf_multi_session(bids_dict,
         wf_multi.get_node(wf.name).get_node('apply_mask').interface._mem_gb = 1
         wf_multi.get_node(wf.name).get_node('id_outliers_from_eddy_report')._mem_gb = 1
         wf_multi.get_node(wf.name).get_node('drop_outliers_from_eddy_report')._mem_gb = 1
+        wf_multi.get_node(wf.name).get_node('drop_raw_outliers_from_eddy_report')._mem_gb = 1
         wf_multi.get_node(wf.name).get_node('SplitDWIs')._mem_gb = 1
         wf_multi.get_node(wf.name).get_node('SplitDWIs').interface._mem_gb = 1
         wf_multi.get_node(wf.name).get_node('RemoveBiasOfDWIs')._mem_gb = 1
@@ -1171,6 +1188,7 @@ def wf_multi_session(bids_dict,
         wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('apply_mask').interface._mem_gb = 1
         wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('id_outliers_from_eddy_report')._mem_gb = 1
         wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('drop_outliers_from_eddy_report')._mem_gb = 1
+        wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('drop_raw_outliers_from_eddy_report')._mem_gb = 1
         wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('SplitDWIs')._mem_gb = 1
         wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('SplitDWIs').interface._mem_gb = 1
         wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('RemoveBiasOfDWIs')._mem_gb = 1

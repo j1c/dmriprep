@@ -218,7 +218,7 @@ def build_workflow(opts, retval):
             "job_finished_timeout": 65,
             "matplotlib_backend": "Agg",
             "plugin": plugin_type,
-            "use_relative_paths": True,
+            "use_relative_paths": False,
             "parameterize_dirs": True,
             "remove_unnecessary_outputs": False,
             "remove_node_directories": False,
