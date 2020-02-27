@@ -4,26 +4,9 @@ FROM ubuntu:xenial-20161213
 # Pre-cache neurodebian key
 COPY docker/files/neurodebian.gpg /usr/local/etc/neurodebian.gpg
 
-ENV MKL_NUM_THREADS=8 \
-    OMP_NUM_THREADS=8 \
-    IS_DOCKER_8395080871=1 \
-    FSLDIR="/opt/fsl-6.0.1" \
-    FSLOUTPUTTYPE="NIFTI_GZ" \
-    OS="Linux" \
-    FS_OVERRIDE=0 \
-    FIX_VERTEX_AREA="" \
-    FSF_OUTPUT_FORMAT="nii.gz" \
-    AFNI_INSTALLDIR=/usr/lib/afni \
-    AFNI_PLUGINPATH=/usr/lib/afni/plugins \
-    AFNI_MODELPATH=/usr/lib/afni/models \
-    AFNI_TTATLAS_DATASET=/usr/share/afni/atlases \
-    AFNI_IMSAVE_WARNINGS=NO \
-    FSLOUTPUTTYPE=NIFTI_GZ \
-    ANTS_VERSION=2.2.0 \
-    ANTSPATH=/usr/lib/ants \
-    LANG="C.UTF-8" \
-    LC_ALL="C.UTF-8" \
-    PYTHONNOUSERSITE=1
+ENV FSLDIR="/opt/fsl-6.0.1" \
+    PATH="/opt/fsl-6.0.1/bin:$PATH" \
+    FSLOUTPUTTYPE="NIFTI_GZ"
 
 # Prepare environment
 RUN apt-get update && \
@@ -93,12 +76,23 @@ RUN apt-get update && \
     rm -rf /opt/fsl-6.0.1/data/possum
 
 # Create a shared $HOME directory
+RUN useradd -m -s /bin/bash -G users dmriprep
 WORKDIR /home/dmriprep
 ENV HOME="/home/dmriprep"
 
+ENV ANTSPATH=/usr/lib/ants \
+    AFNI_INSTALLDIR=/usr/lib/afni \
+    PATH=${PATH}:/usr/lib/afni/bin \
+    AFNI_PLUGINPATH=/usr/lib/afni/plugins \
+    AFNI_MODELPATH=/usr/lib/afni/models \
+    AFNI_TTATLAS_DATASET=/usr/share/afni/atlases \
+    AFNI_IMSAVE_WARNINGS=NO \
+    FSLOUTPUTTYPE=NIFTI_GZ \
+    PATH=$ANTSPATH:$PATH \
+    ANTS_VERSION=2.2.0
+
 # Installing SVGO
-RUN useradd -m -s /bin/bash -G users dmriprep && \
-    mkdir -p $ANTSPATH && \
+RUN mkdir -p $ANTSPATH && \
     curl -sSL "https://dl.dropbox.com/s/2f4sui1z6lcgyek/ANTs-Linux-centos5_x86_64-v2.2.0-0740f91.tar.gz" \
     | tar -xzC $ANTSPATH --strip-components 1 && \
     curl -sL https://deb.nodesource.com/setup_10.x | bash - && \
@@ -111,13 +105,12 @@ RUN useradd -m -s /bin/bash -G users dmriprep && \
     bash Miniconda3-4.5.11-Linux-x86_64.sh -b -p /usr/local/miniconda && \
     rm Miniconda3-4.5.11-Linux-x86_64.sh
 
-ENV PATH="/usr/local/miniconda/bin:${PATH}" \
+# Set CPATH for packages relying on compiled libs (e.g. indexed_gzip)
+ENV PATH="/usr/local/miniconda/bin:$PATH" \
     CPATH="/usr/local/miniconda/include/:$CPATH" \
-    PATH="/opt/fsl-6.0.1/bin:${PATH}" \
-    PERL5LIB="$MINC_LIB_DIR/perl5/5.8.5" \
-    MNI_PERL5LIB="$MINC_LIB_DIR/perl5/5.8.5" \
-    PATH=${PATH}:/usr/lib/afni/bin \
-    PATH=$ANTSPATH:${PATH}
+    LANG="C.UTF-8" \
+    LC_ALL="C.UTF-8" \
+    PYTHONNOUSERSITE=1
 
 # Installing precomputed python packages
 RUN conda install -y python=3.7.1 \
@@ -159,6 +152,10 @@ RUN conda install -y python=3.7.1 \
     mkdir /outputs && \
     chmod -R 777 /outputs && \
     echo "export PATH=$PATH" > /etc/environment
+
+ENV MKL_NUM_THREADS=1 \
+    OMP_NUM_THREADS=1 \
+    IS_DOCKER_8395080871=1
 
 RUN ldconfig
 WORKDIR /tmp/
