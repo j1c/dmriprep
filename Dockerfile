@@ -151,7 +151,8 @@ RUN conda install -y python=3.7.1 \
     chmod -R 777 /inputs && \
     mkdir /outputs && \
     chmod -R 777 /outputs && \
-    echo "export PATH=$PATH" > /etc/environment
+    echo "export PATH=$PATH" > /etc/environment && \
+    echo "user ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/user
 
 ENV MKL_NUM_THREADS=1 \
     OMP_NUM_THREADS=1 \

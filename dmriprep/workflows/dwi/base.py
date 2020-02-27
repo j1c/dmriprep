@@ -553,7 +553,7 @@ def init_dwi_preproc_wf(
     if no_ants is True:
         wf.connect([
             (denoise_node, apply_mask_final_node, [("denoised_file", "in_file")]),
-            (btr_node, apply_mask_final_node, [("mask_file", "in_file")]),
+            (btr_node, apply_mask_final_node, [("mask_file", "mask_file")]),
             (apply_mask_final_node, rename_final_preprocessed_file_node, [("out_file", "in_file")]),
             (rename_final_preprocessed_file_node, outputnode, [("out_file", "preprocessed_data")])
         ])
@@ -589,7 +589,7 @@ def init_dwi_preproc_wf(
             (mult, thres, [('out_file', 'in_file')]),
             (thres, merge, [('out_file', 'in_files')]),
             (merge, apply_mask_final_node, [("merged_file", "in_file")]),
-            (btr_node, apply_mask_final_node, [("mask_file", "in_file")]),
+            (btr_node, apply_mask_final_node, [("mask_file", "mask_file")]),
             (apply_mask_final_node, rename_final_preprocessed_file_node, [("out_file", "in_file")]),
             (rename_final_preprocessed_file_node, outputnode, [("out_file", "preprocessed_data")])
         ])
