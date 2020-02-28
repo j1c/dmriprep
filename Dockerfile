@@ -4,10 +4,6 @@ FROM ubuntu:xenial-20161213
 # Pre-cache neurodebian key
 COPY docker/files/neurodebian.gpg /usr/local/etc/neurodebian.gpg
 
-ENV FSLDIR="/opt/fsl-6.0.1" \
-    PATH="/opt/fsl-6.0.1/bin:$PATH" \
-    FSLOUTPUTTYPE="NIFTI_GZ"
-
 # Prepare environment
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -28,20 +24,33 @@ RUN apt-get update && \
     curl -sL https://deb.nodesource.com/setup_10.x | bash - && \
     apt-get install -y --no-install-recommends \
                     nodejs && \
-    apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \ 
+    apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
     curl -o pandoc-2.2.2.1-1-amd64.deb -sSL "https://github.com/jgm/pandoc/releases/download/2.2.2.1/pandoc-2.2.2.1-1-amd64.deb" && \
     dpkg -i pandoc-2.2.2.1-1-amd64.deb && \
-    rm pandoc-2.2.2.1-1-amd64.deb && \
-    # Installing Neurodebian packages (FSL, AFNI, git)
-    curl -sSL "http://neuro.debian.net/lists/$( lsb_release -c | cut -f2 ).us-ca.full" >> /etc/apt/sources.list.d/neurodebian.sources.list && \
+    rm pandoc-2.2.2.1-1-amd64.deb
+
+ENV FSL_DIR="/usr/share/fsl/5.0" \
+    OS="Linux" \
+    FS_OVERRIDE=0 \
+    FIX_VERTEX_AREA="" \
+    FSF_OUTPUT_FORMAT="nii.gz"
+ENV PERL5LIB="$MINC_LIB_DIR/perl5/5.8.5" \
+    MNI_PERL5LIB="$MINC_LIB_DIR/perl5/5.8.5"
+
+# Installing Neurodebian packages (FSL, AFNI, git)
+RUN curl -sSL "http://neuro.debian.net/lists/$( lsb_release -c | cut -f2 ).us-ca.full" >> /etc/apt/sources.list.d/neurodebian.sources.list && \
     apt-key add /usr/local/etc/neurodebian.gpg && \
     (apt-key adv --refresh-keys --keyserver hkp://ha.pool.sks-keyservers.net 0xA5D32F012649A5A9 || true) && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
                     afni=16.2.07~dfsg.1-5~nd16.04+1 \
                     git-annex-standalone && \
-    apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
-    apt-get update -qq \
+    apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+ENV FSLDIR="/opt/fsl-6.0.1" \
+    PATH="/opt/fsl-6.0.1/bin:$PATH" \
+    FSLOUTPUTTYPE="NIFTI_GZ"
+RUN apt-get update -qq \
     && apt-get install -y -q --no-install-recommends \
            bc \
            dc \
@@ -62,26 +71,26 @@ RUN apt-get update && \
     && rm -rf /var/lib/apt/lists/* \
     && echo "Downloading FSL ..." \
     && wget -q http://fsl.fmrib.ox.ac.uk/fsldownloads/fslinstaller.py \
-    && chmod 775 fslinstaller.py && \
-    /fslinstaller.py -d /opt/fsl-6.0.1 -V 6.0.1 -q && \
-    rm -rf /opt/fsl-6.0.1/data && \
-    rm -rf /opt/fsl-6.0.1/bin/FSLeyes* && \
-    rm -rf /opt/fsl-6.0.1/src && \
-    rm -rf /opt/fsl-6.0.1/extras/src && \
-    rm -rf /opt/fsl-6.0.1/doc && \
-    rm -rf /opt/fsl-6.0.1/bin/fslview.app && \
-    rm -rf /opt/fsl-6.0.1/data/atlases && \
-    rm -rf /opt/fsl-6.0.1/data/first && \
-    rm -rf /opt/fsl-6.0.1/data/mist && \
-    rm -rf /opt/fsl-6.0.1/data/possum
+    && chmod 775 fslinstaller.py \
+    && /fslinstaller.py -d /opt/fsl-6.0.1 -V 6.0.1 -q \
+    && rm -rf /opt/fsl-6.0.1/data \
+    && rm -rf /opt/fsl-6.0.1/bin/FSLeyes* \
+    && rm -rf /opt/fsl-6.0.1/src \
+    && rm -rf /opt/fsl-6.0.1/extras/src \
+    && rm -rf /opt/fsl-6.0.1/doc \
+    && rm -rf /opt/fsl-6.0.1/bin/fslview.app \
+    && rm -rf /opt/fsl-6.0.1/data/atlases \
+    && rm -rf /opt/fsl-6.0.1/data/first \
+    && rm -rf /opt/fsl-6.0.1/data/mist \
+    && rm -rf /opt/fsl-6.0.1/data/possum
 
-# Create a shared $HOME directory
-RUN useradd -m -s /bin/bash -G users dmriprep
-WORKDIR /home/dmriprep
-ENV HOME="/home/dmriprep"
+# Installing ANTs 2.2.0 (NeuroDocker build)
+ENV ANTSPATH=/usr/lib/ants
+RUN mkdir -p $ANTSPATH && \
+    curl -sSL "https://dl.dropbox.com/s/2f4sui1z6lcgyek/ANTs-Linux-centos5_x86_64-v2.2.0-0740f91.tar.gz" \
+    | tar -xzC $ANTSPATH --strip-components 1
 
-ENV ANTSPATH=/usr/lib/ants \
-    AFNI_INSTALLDIR=/usr/lib/afni \
+ENV AFNI_INSTALLDIR=/usr/lib/afni \
     PATH=${PATH}:/usr/lib/afni/bin \
     AFNI_PLUGINPATH=/usr/lib/afni/plugins \
     AFNI_MODELPATH=/usr/lib/afni/models \
@@ -91,17 +100,17 @@ ENV ANTSPATH=/usr/lib/ants \
     PATH=$ANTSPATH:$PATH \
     ANTS_VERSION=2.2.0
 
+# Create a shared $HOME directory
+RUN useradd -m -s /bin/bash -G users dmriprep
+WORKDIR /home/dmriprep
+ENV HOME="/home/dmriprep"
+
 # Installing SVGO
-RUN mkdir -p $ANTSPATH && \
-    curl -sSL "https://dl.dropbox.com/s/2f4sui1z6lcgyek/ANTs-Linux-centos5_x86_64-v2.2.0-0740f91.tar.gz" \
-    | tar -xzC $ANTSPATH --strip-components 1 && \
-    curl -sL https://deb.nodesource.com/setup_10.x | bash - && \
-    apt-get install -y nodejs && \
-    npm install -g svgo && \
-    # Installing bids-validator
-    npm install -g bids-validator@1.2.3 && \
-    # Installing and setting up miniconda
-    curl -sSLO https://repo.continuum.io/miniconda/Miniconda3-4.5.11-Linux-x86_64.sh && \
+RUN curl -sL https://deb.nodesource.com/setup_10.x | bash - \
+    && apt-get install -y nodejs \
+    && npm install -g svgo \
+    && npm install -g bids-validator@1.2.3 \
+    && curl -sSLO https://repo.continuum.io/miniconda/Miniconda3-4.5.11-Linux-x86_64.sh && \
     bash Miniconda3-4.5.11-Linux-x86_64.sh -b -p /usr/local/miniconda && \
     rm Miniconda3-4.5.11-Linux-x86_64.sh
 
@@ -131,32 +140,43 @@ RUN conda install -y python=3.7.1 \
     chmod -R a+rX /usr/local/miniconda; sync && \
     chmod +x /usr/local/miniconda/bin/*; sync && \
     conda build purge-all; sync && \
-    conda clean -tipsy && sync && \
-    python -c "from matplotlib import font_manager" && \
-    sed -i 's/\(backend *: \).*$/\1Agg/g' $( python -c "import matplotlib; print(matplotlib.matplotlib_fname())" ) && \
-    pip install --upgrade pip && \ 
-    apt-get update && apt-get install -y \
-    gfortran \
-    liblapack-dev \
-    libopenblas-dev && \
-    pip install ipython cython parse && \
-    git clone -b homecooked https://github.com/dPys/dmriprep.git dmriprep && \
-    cd dmriprep && \
-    python setup.py install && \
-    pip install ipython cython parse && \
-    pip install --no-cache-dir https://github.com/samuelstjean/nlsam/archive/master.zip && \
-    find $HOME -type d -exec chmod go=u {} + && \
-    find $HOME -type f -exec chmod go=u {} + && \
-    mkdir /inputs && \
-    chmod -R 777 /inputs && \
-    mkdir /outputs && \
-    chmod -R 777 /outputs && \
-    echo "export PATH=$PATH" > /etc/environment && \
-    echo "user ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/user
+    conda clean -tipsy && sync
 
+# Unless otherwise specified each process should only use one thread - nipype
+# will handle parallelization
 ENV MKL_NUM_THREADS=1 \
-    OMP_NUM_THREADS=1 \
-    IS_DOCKER_8395080871=1
+    OMP_NUM_THREADS=1
+
+# Precaching fonts, set 'Agg' as default backend for matplotlib
+RUN python -c "from matplotlib import font_manager" \
+    && sed -i 's/\(backend *: \).*$/\1Agg/g' $( python -c "import matplotlib; print(matplotlib.matplotlib_fname())" ) \
+    && pip install --upgrade pip \
+    && apt-get update && apt-get install -y gfortran liblapack-dev libopenblas-dev \
+    && pip install ipython cython parse \
+    && git clone -b homecooked https://github.com/dPys/dmriprep.git dmriprep \
+    && cd dmriprep \
+    && python setup.py install \
+    && pip install ipython cython parse \
+    && pip install --no-cache-dir https://github.com/samuelstjean/nlsam/archive/master.zip \
+    && find $HOME -type d -exec chmod go=u {} + \
+    && find $HOME -type f -exec chmod go=u {} + \
+    && mkdir /inputs \
+    && chmod -R 777 /inputs \
+    && mkdir /outputs \
+    && chmod -R 777 /outputs \
+#    && apt-get install sudo
+#    && echo "dmriprep ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/user \
+    && find /usr/local/miniconda/lib/python3.7/site-packages/dmriprep* -type f -iname "*.py" -exec chmod 777 {} \; \
+    && find /usr/local/miniconda/lib/python3.7/site-packages/dmriprep* -type f -iname "*.yaml" -exec chmod 777 {} \; \
+    && apt-get purge -y --auto-remove \
+       git \
+       wget \
+       curl \
+       build-essential \
+       ca-certificates \
+       cython3
+
+ENV IS_DOCKER_8395080871=1
 
 RUN ldconfig
 WORKDIR /tmp/
