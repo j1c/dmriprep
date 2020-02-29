@@ -164,7 +164,6 @@ RUN python -c "from matplotlib import font_manager" \
     && chmod -R 777 /inputs \
     && mkdir /outputs \
     && chmod -R 777 /outputs \
-    && apt-get install sudo
     && echo "dmriprep ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/user \
     && find /usr/local/miniconda/lib/python3.7/site-packages/dmriprep* -type f -iname "*.py" -exec chmod 777 {} \; \
     && find /usr/local/miniconda/lib/python3.7/site-packages/dmriprep* -type f -iname "*.yaml" -exec chmod 777 {} \; \
