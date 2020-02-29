@@ -5,20 +5,19 @@ import numpy as np
 
 
 def make_gtab(fbval, fbvec, sesdir, final, b0_thr=100):
+    from nipype.utils.filemanip import fname_presuffix
     from dipy.io import save_pickle
     from dipy.core.gradients import gradient_table
     from dipy.io import read_bvals_bvecs
+    import uuid
+    from time import strftime
 
     if fbval and fbvec:
         bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
     else:
         raise ValueError("Either bvals or bvecs files not found (or rescaling failed)!")
 
-    namer_dir = sesdir + "/dmri_tmp"
-    if not os.path.isdir(namer_dir):
-        os.mkdir(namer_dir)
-
-    gtab_file = "%s%s" % (namer_dir, "/gtab.pkl")
+    gtab_file = fname_presuffix(fbval, suffix="_gtab_{}_{}.pkl".format(strftime('%Y%m%d_%H%M%S'), uuid.uuid4()), use_ext=False)
 
     # Creating the gradient table
     gtab = gradient_table(bvals, bvecs, atol=1)
@@ -335,6 +334,7 @@ def save_3d_to_4d(in_files):
     del img_4d
     return out_file
 
+
 def save_4d_to_3d(in_file):
     from nipype.utils.filemanip import fname_presuffix
     files_3d = nib.four_to_three(nib.load(in_file))
@@ -345,6 +345,27 @@ def save_4d_to_3d(in_file):
         out_files.append(out_file)
     del files_3d
     return out_files
+
+
+def make_sigma_4d(sig_file, dwi_file):
+    from nipype.utils.filemanip import fname_presuffix
+    dwi_img = nib.load(dwi_file)
+    sig_arr = np.load(sig_file)
+    out_files = []
+    if len(sig_arr.shape) == 3:
+        for i in range(dwi_img.shape[-1]):
+            out_file = fname_presuffix(sig_file, suffix="_tmp_{}.nii.gz".format(i), use_ext=False)
+            nib.Nifti1Image(sig_arr, affine=dwi_img.affine).to_filename(out_file)
+            out_files.append(out_file)
+    else:
+        files_3d = nib.four_to_three(nib.Nifti1Image(sig_arr, affine=dwi_img.affine))
+        for i, file_3d in enumerate(files_3d):
+            out_file = fname_presuffix(sig_file, suffix="_tmp_{}.nii.gz".format(i), use_ext=False)
+            file_3d.to_filename(out_file)
+            out_files.append(out_file)
+        del files_3d
+    return out_files
+
 
 def eddy_inputs_from_dwi_files(sesdir, gtab_file):
     from dipy.io import load_pickle
@@ -755,16 +776,25 @@ def denoise(
     mask_data = np.asarray(nib.load(mask).get_data(caching='unchanged'), dtype=np.bool)
 
     if sigma_path:
-        sigma = np.load(sigma_path)
+        if sigma_path.endswith('.npy'):
+            sigma = np.load(sigma_path)
+        elif sigma_path.endswith('.nii') or sigma_path.endswith('.nii.gz'):
+            sigma = nib.load(sigma_path).get_fdata()
+        else:
+            raise ValueError('Format of sigma array not recognized.')
+
+        sigma_3d = np.median(sigma, axis=-1)
+
         if denoise_strategy == "mppca":
+
             print('Running Marchenko-Pastur(MP) PCA denoising...')
-            img_data_den = genpca(img_data, sigma=sigma, mask=mask_data,
+            img_data_den = genpca(img_data, sigma=sigma_3d, mask=mask_data,
                                   patch_radius=patch_radius,
                                   pca_method='eig', tau_factor=None,
                                   return_sigma=False, out_dtype=None)
         elif denoise_strategy == "localpca":
             print('Running Local PCA denoising...')
-            img_data_den = genpca(img_data, sigma=sigma, mask=mask_data,
+            img_data_den = genpca(img_data, sigma=sigma_3d, mask=mask_data,
                                   patch_radius=patch_radius,
                                   pca_method='eig', tau_factor=tau_factor,
                                   return_sigma=False, out_dtype=None)
@@ -772,7 +802,7 @@ def denoise(
             print('Running Non-Local Means denoising...')
             img_data_den = nlmeans(
                 img_data,
-                sigma=sigma,
+                sigma=sigma_3d,
                 mask=mask_data,
                 patch_radius=patch_radius,
                 block_radius=block_radius,
@@ -796,7 +826,6 @@ def denoise(
                                             mask=mask_data, sigma=sigma, N=N)
 
             # Denoising
-            sigma_3d = np.median(sigma, axis=-1)
             block_size = np.array([3, 3, 3, 5])
             img_data_den = nlsam_denoise(data_stabilized, sigma_3d, gtab.bvals, gtab.bvecs, block_size,
                                          mask=mask_data, is_symmetric=False, subsample=True,

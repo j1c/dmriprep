@@ -151,7 +151,7 @@ ENV MKL_NUM_THREADS=1 \
 RUN python -c "from matplotlib import font_manager" \
     && sed -i 's/\(backend *: \).*$/\1Agg/g' $( python -c "import matplotlib; print(matplotlib.matplotlib_fname())" ) \
     && pip install --upgrade pip \
-    && apt-get update && apt-get install -y gfortran liblapack-dev libopenblas-dev \
+    && apt-get update && apt-get install -y sudo gfortran liblapack-dev libopenblas-dev \
     && pip install ipython cython parse \
     && git clone -b homecooked https://github.com/dPys/dmriprep.git dmriprep \
     && cd dmriprep \
@@ -164,8 +164,8 @@ RUN python -c "from matplotlib import font_manager" \
     && chmod -R 777 /inputs \
     && mkdir /outputs \
     && chmod -R 777 /outputs \
-#    && apt-get install sudo
-#    && echo "dmriprep ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/user \
+    && apt-get install sudo
+    && echo "dmriprep ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/user \
     && find /usr/local/miniconda/lib/python3.7/site-packages/dmriprep* -type f -iname "*.py" -exec chmod 777 {} \; \
     && find /usr/local/miniconda/lib/python3.7/site-packages/dmriprep* -type f -iname "*.yaml" -exec chmod 777 {} \; \
     && apt-get purge -y --auto-remove \
