@@ -542,6 +542,30 @@ def drop_outliers_fn(in_file, in_bval, in_bvec, drop_scans, in_sigma=None, perc_
     return out_file, out_bval, out_bvec, out_sigma
 
 
+def drop_scans_from_4d(in_file, drop_scans):
+    import nibabel as nib
+    import numpy as np
+    import os.path as op
+    from nipype.utils.filemanip import fname_presuffix
+    img = nib.load(op.abspath(in_file))
+    img_data = img.get_data()
+    img_data_thinned = np.delete(img_data, drop_scans, axis=3)
+    if isinstance(img, nib.nifti1.Nifti1Image):
+        img_thinned = nib.Nifti1Image(
+            img_data_thinned.astype(np.float64), img.affine, header=img.header
+        )
+    elif isinstance(img, nib.nifti2.Nifti2Image):
+        img_thinned = nib.Nifti2Image(
+            img_data_thinned.astype(np.float64), img.affine, header=img.header
+        )
+    else:
+        raise TypeError("in_file does not contain Nifti image datatype.")
+
+    out_file = fname_presuffix(in_file, suffix="_thinned", newpath=op.abspath("."))
+    nib.save(img_thinned, op.abspath(out_file))
+    return out_file
+
+
 def get_params(A):
     """This is a copy of spm's spm_imatrix where
     we already know the rotations and translations matrix,
