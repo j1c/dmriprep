@@ -296,6 +296,7 @@ def init_dwi_preproc_wf(
     eddy_node.n_procs = omp_nthreads
     eddy_node.interface.mem_gb = eddy_mem_gb
     eddy_node.interface.n_procs = omp_nthreads
+    os.environ['OMP_NUM_THREADS'] = omp_nthreads
 
     make_basename_node = pe.Node(
         niu.Function(
@@ -667,6 +668,7 @@ def init_base_wf(
     from dmriprep.workflows.dwi.util import init_dwi_concat_wf
     from dmriprep.utils import core
 
+    os.environ['OMP_NUM_THREADS'] = omp_nthreads
     participant = list(bids_dict.keys())[0]
     sessions = list(bids_dict[participant].keys())
 
@@ -936,6 +938,8 @@ def wf_multi_session(bids_dict,
     from dmriprep.workflows.dwi.base import init_dwi_preproc_wf
     from dmriprep.workflows.dwi.util import init_dwi_concat_wf
     from dmriprep.utils import core
+
+    os.environ['OMP_NUM_THREADS'] = omp_nthreads
 
     wf_multi_session_name = "%s%s%s" % ('wf_multi_session_', participant, '_multi_session')
     wf_multi = pe.Workflow(name=wf_multi_session_name)

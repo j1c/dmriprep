@@ -145,7 +145,7 @@ RUN conda install -y python=3.7.1 \
 # Unless otherwise specified each process should only use one thread - nipype
 # will handle parallelization
 ENV MKL_NUM_THREADS=1 \
-    OMP_NUM_THREADS=1
+    OMP_NUM_THREADS=8
 
 # Precaching fonts, set 'Agg' as default backend for matplotlib
 RUN python -c "from matplotlib import font_manager" \
@@ -165,8 +165,7 @@ RUN python -c "from matplotlib import font_manager" \
     && mkdir /outputs \
     && chmod -R 777 /outputs \
     && echo "dmriprep ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/user \
-    && find /usr/local/miniconda/lib/python3.7/site-packages/dmriprep* -type f -iname "*.py" -exec chmod 777 {} \; \
-    && find /usr/local/miniconda/lib/python3.7/site-packages/dmriprep* -type f -iname "*.yaml" -exec chmod 777 {} \; \
+    && chmod -R 777 /usr/local/miniconda/lib/python3.7/site-packages/dmriprep* \
     && apt-get purge -y --auto-remove \
        git \
        wget \

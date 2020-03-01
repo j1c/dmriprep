@@ -40,12 +40,16 @@ class ExtendedEddy(fsl.Eddy):
     _num_threads = 1
 
     def __init__(self, **inputs):
+        import os
         super(fsl.Eddy, self).__init__(**inputs)
         self.inputs.on_trait_change(self._num_threads_update, "num_threads")
         if not isdefined(self.inputs.num_threads):
             self.inputs.num_threads = self._num_threads
         else:
             self._num_threads_update()
+
+        os.environ['OMP_NUM_THREADS'] = self.inputs.num_threads
+
         self.inputs.on_trait_change(self._use_cuda, "use_cuda")
         if isdefined(self.inputs.use_cuda):
             self._use_cuda()

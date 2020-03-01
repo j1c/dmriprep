@@ -50,6 +50,8 @@ def make_gtab(fbval, fbvec, sesdir, final, b0_thr=100):
 
 
 def rename_final_preprocessed_file(in_file, sesdir, clean=True):
+    import os
+    import glob
     import shutil
 
     out_file = sesdir + '/final_preprocessed_dwi.nii.gz'
@@ -58,7 +60,15 @@ def rename_final_preprocessed_file(in_file, sesdir, clean=True):
     if clean is True:
         tmp_paths = ['/gibbs_free_data*', '/dmri_tmp', '/preprocessed_data_denoised*', '/*dwi_reor_RAS*.nii.gz', '/topup_imain.nii.gz', '/*.txt', '/bvecs_reor.bvec', '/*.cnf']
         for tmp_path in tmp_paths:
-            shutil.rmtree(sesdir + tmp_path)
+            tmp_path_full = sesdir + tmp_path
+            if os.path.isdir(tmp_path_full):
+                shutil.rmtree(tmp_path_full)
+            elif os.path.isfile(tmp_path_full):
+                tmp_files = glob.glob(tmp_path_full)
+                for f_ in tmp_files:
+                    os.remove(f_)
+            else:
+                continue
 
     return out_file
 

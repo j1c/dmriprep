@@ -155,6 +155,7 @@ def build_workflow(opts, retval):
 
     if omp_nthreads == 0:
         omp_nthreads = int(np.round(min(float(nprocs) - 1 if float(nprocs) > 1 else cpu_count(), 8)), 0)
+        os.environ['OMP_NUM_THREADS'] = omp_nthreads
 
     if 1 < float(nprocs) < float(omp_nthreads):
         raise RuntimeWarning('Per-process threads (--omp_nthreads=%d) exceed total threads (--nprocs/--n_cpus=%d)',
