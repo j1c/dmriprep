@@ -48,7 +48,7 @@ class ExtendedEddy(fsl.Eddy):
         else:
             self._num_threads_update()
 
-        os.environ['OMP_NUM_THREADS'] = self.inputs.num_threads
+        os.environ['OMP_NUM_THREADS'] = str(self.inputs.num_threads)
 
         self.inputs.on_trait_change(self._use_cuda, "use_cuda")
         if isdefined(self.inputs.use_cuda):

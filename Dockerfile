@@ -29,6 +29,13 @@ RUN apt-get update && \
     dpkg -i pandoc-2.2.2.1-1-amd64.deb && \
     rm pandoc-2.2.2.1-1-amd64.deb
 
+# Create a shared $HOME directory
+RUN useradd -m -s /bin/bash -G users dmriprep
+WORKDIR /home/dmriprep
+ENV HOME="/home/dmriprep"
+
+USER dmriprep
+
 ENV FSL_DIR="/usr/share/fsl/5.0" \
     OS="Linux" \
     FS_OVERRIDE=0 \
@@ -100,11 +107,6 @@ ENV AFNI_INSTALLDIR=/usr/lib/afni \
     PATH=$ANTSPATH:$PATH \
     ANTS_VERSION=2.2.0
 
-# Create a shared $HOME directory
-RUN useradd -m -s /bin/bash -G users dmriprep
-WORKDIR /home/dmriprep
-ENV HOME="/home/dmriprep"
-
 # Installing SVGO
 RUN curl -sL https://deb.nodesource.com/setup_10.x | bash - \
     && apt-get install -y nodejs \
@@ -120,6 +122,8 @@ ENV PATH="/usr/local/miniconda/bin:$PATH" \
     LANG="C.UTF-8" \
     LC_ALL="C.UTF-8" \
     PYTHONNOUSERSITE=1
+
+USER root
 
 # Installing precomputed python packages
 RUN conda install -y python=3.7.1 \
@@ -147,6 +151,8 @@ RUN conda install -y python=3.7.1 \
 ENV MKL_NUM_THREADS=1 \
     OMP_NUM_THREADS=8
 
+USER dmriprep
+
 # Precaching fonts, set 'Agg' as default backend for matplotlib
 RUN python -c "from matplotlib import font_manager" \
     && sed -i 's/\(backend *: \).*$/\1Agg/g' $( python -c "import matplotlib; print(matplotlib.matplotlib_fname())" ) \
@@ -157,8 +163,11 @@ RUN python -c "from matplotlib import font_manager" \
     && cd dmriprep \
     && python setup.py install \
     && pip install ipython cython parse \
-    && pip install --no-cache-dir https://github.com/samuelstjean/nlsam/archive/master.zip \
-    && find $HOME -type d -exec chmod go=u {} + \
+    && pip install --no-cache-dir https://github.com/samuelstjean/nlsam/archive/master.zip
+
+USER root
+
+RUN find $HOME -type d -exec chmod go=u {} + \
     && find $HOME -type f -exec chmod go=u {} + \
     && mkdir /inputs \
     && chmod -R 777 /inputs \
@@ -178,6 +187,7 @@ ENV IS_DOCKER_8395080871=1
 
 RUN ldconfig
 WORKDIR /tmp/
+USER dmriprep
 ENTRYPOINT ["/usr/local/miniconda/bin/dmriprep"]
 
 ARG BUILD_DATE
