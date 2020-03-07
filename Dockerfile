@@ -131,8 +131,8 @@ RUN conda install -y python=3.7.1 \
 
 # Unless otherwise specified each process should only use one thread - nipype
 # will handle parallelization
-ENV MKL_NUM_THREADS=1 \
-    OMP_NUM_THREADS=8
+ENV MKL_NUM_THREADS=4 \
+    OMP_NUM_THREADS=4
 
 # Create a shared $HOME directory
 RUN useradd -m -s /bin/bash -G users dmriprep
@@ -151,7 +151,9 @@ RUN python -c "from matplotlib import font_manager" \
     && pip install ipython cython parse \
     && pip install --no-cache-dir https://github.com/samuelstjean/nlsam/archive/master.zip
 
-RUN chown -R dmriprep /usr/local/miniconda/lib/python3.7 \
+RUN chown -R dmriprep:dmriprep /usr/local/miniconda/lib/python3.7 \
+    && chown -R dmriprep:dmriprep /home/dmriprep \
+    && chmod -R 777 /home/dmriprep \
     && find $HOME -type d -exec chmod go=u {} + \
     && find $HOME -type f -exec chmod go=u {} + \
     && mkdir /inputs \
@@ -159,6 +161,8 @@ RUN chown -R dmriprep /usr/local/miniconda/lib/python3.7 \
     && mkdir /outputs \
     && chmod -R 777 /outputs \
     && echo "dmriprep ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/user \
+    && chmod a+s -R /usr/local \
+    && chmod -R 775 /usr/local/miniconda/lib/python3.7/site-packages \
     && chmod -R 777 /usr/local/miniconda/lib/python3.7/site-packages/dmriprep* \
     && apt-get purge -y --auto-remove \
        git \
