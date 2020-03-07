@@ -29,21 +29,6 @@ RUN apt-get update && \
     dpkg -i pandoc-2.2.2.1-1-amd64.deb && \
     rm pandoc-2.2.2.1-1-amd64.deb
 
-# Create a shared $HOME directory
-RUN useradd -m -s /bin/bash -G users dmriprep
-WORKDIR /home/dmriprep
-ENV HOME="/home/dmriprep"
-
-USER dmriprep
-
-ENV FSL_DIR="/usr/share/fsl/5.0" \
-    OS="Linux" \
-    FS_OVERRIDE=0 \
-    FIX_VERTEX_AREA="" \
-    FSF_OUTPUT_FORMAT="nii.gz"
-ENV PERL5LIB="$MINC_LIB_DIR/perl5/5.8.5" \
-    MNI_PERL5LIB="$MINC_LIB_DIR/perl5/5.8.5"
-
 # Installing Neurodebian packages (FSL, AFNI, git)
 RUN curl -sSL "http://neuro.debian.net/lists/$( lsb_release -c | cut -f2 ).us-ca.full" >> /etc/apt/sources.list.d/neurodebian.sources.list && \
     apt-key add /usr/local/etc/neurodebian.gpg && \
@@ -123,8 +108,6 @@ ENV PATH="/usr/local/miniconda/bin:$PATH" \
     LC_ALL="C.UTF-8" \
     PYTHONNOUSERSITE=1
 
-USER root
-
 # Installing precomputed python packages
 RUN conda install -y python=3.7.1 \
                      pip=19.1 \
@@ -151,7 +134,10 @@ RUN conda install -y python=3.7.1 \
 ENV MKL_NUM_THREADS=1 \
     OMP_NUM_THREADS=8
 
-USER dmriprep
+# Create a shared $HOME directory
+RUN useradd -m -s /bin/bash -G users dmriprep
+WORKDIR /home/dmriprep
+ENV HOME="/home/dmriprep"
 
 # Precaching fonts, set 'Agg' as default backend for matplotlib
 RUN python -c "from matplotlib import font_manager" \
@@ -165,9 +151,8 @@ RUN python -c "from matplotlib import font_manager" \
     && pip install ipython cython parse \
     && pip install --no-cache-dir https://github.com/samuelstjean/nlsam/archive/master.zip
 
-USER root
-
-RUN find $HOME -type d -exec chmod go=u {} + \
+RUN chown -R dmriprep /usr/local/miniconda/lib/python3.7 \
+    && find $HOME -type d -exec chmod go=u {} + \
     && find $HOME -type f -exec chmod go=u {} + \
     && mkdir /inputs \
     && chmod -R 777 /inputs \
