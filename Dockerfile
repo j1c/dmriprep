@@ -125,7 +125,7 @@ RUN conda install -y python=3.7.1 \
                      zlib; sync && \
 		     cython && \
     chmod -R a+rX /usr/local/miniconda; sync && \
-    chmod +x /usr/local/miniconda/bin/*; sync && \
+    chmod 777 /usr/local/miniconda/bin/*; sync && \
     conda build purge-all; sync && \
     conda clean -tipsy && sync
 
@@ -163,7 +163,7 @@ RUN chown -R dmriprep:dmriprep /usr/local/miniconda/lib/python3.7 \
     && echo "dmriprep ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/user \
     && chmod a+s -R /usr/local \
     && chmod -R 775 /usr/local/miniconda/lib/python3.7/site-packages \
-    && chmod -R 777 /usr/local/miniconda/lib/python3.7/site-packages/dmriprep* \
+    && chmod -R 777 /usr/local/miniconda/lib/python3.7/site-packages/dmriprep*; sync \
     && apt-get purge -y --auto-remove \
        git \
        wget \
