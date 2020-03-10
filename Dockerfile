@@ -135,7 +135,7 @@ ENV MKL_NUM_THREADS=4 \
     OMP_NUM_THREADS=4
 
 # Create a shared $HOME directory
-RUN useradd -m -s /bin/bash -G users dmriprep
+RUN useradd --no-user-group --create-home --shell /bin/bash dmriprep
 WORKDIR /home/dmriprep
 ENV HOME="/home/dmriprep"
 
