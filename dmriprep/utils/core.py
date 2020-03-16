@@ -58,7 +58,7 @@ def rename_final_preprocessed_file(in_file, sesdir, clean=True):
     shutil.copy(in_file, out_file)
 
     if clean is True:
-        tmp_paths = ['/gibbs_free_data_tmp*', '/dmri_tmp', '/preprocessed_data_denoised*', '/*dwi_reor_RAS*.nii.gz', '/topup_imain.nii.gz', '/*.txt', '/bvecs_reor.bvec', '/*.cnf']
+        tmp_paths = ['/gibbs_free_data*', '/dmri_tmp', '/preprocessed_data_denoised*', '/*dwi_reor_RAS*.nii.gz', '/topup_imain.nii.gz', '/*.txt', '/bvecs_reor.bvec', '/*.cnf']
         for tmp_path in tmp_paths:
             tmp_path_full = sesdir + tmp_path
             if os.path.isdir(tmp_path_full):

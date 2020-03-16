@@ -358,7 +358,7 @@ def init_dwi_preproc_wf(
         ),
         name="drop_outliers_from_eddy_report",
     )
-    drop_outliers_from_eddy_report_node._mem_gb = 2
+    drop_outliers_from_eddy_report_node._mem_gb = 4
 
     drop_raw_outliers_from_eddy_report_node = pe.Node(
         niu.Function(
@@ -369,7 +369,7 @@ def init_dwi_preproc_wf(
         ),
         name="drop_raw_outliers_from_eddy_report",
     )
-    drop_raw_outliers_from_eddy_report_node._mem_gb = 2
+    drop_raw_outliers_from_eddy_report_node._mem_gb = 4
 
     split_raw_dwis_node = pe.Node(
         niu.Function(
@@ -380,7 +380,7 @@ def init_dwi_preproc_wf(
         ),
         name="split_raw_dwis_node",
     )
-    split_raw_dwis_node._mem_gb = 2
+    split_raw_dwis_node._mem_gb = 4
 
     split_eddy_dwis_node = pe.Node(
         niu.Function(
@@ -391,7 +391,7 @@ def init_dwi_preproc_wf(
         ),
         name="split_eddy_dwis_node",
     )
-    split_eddy_dwis_node._mem_gb = 2
+    split_eddy_dwis_node._mem_gb = 4
 
     split_sigma_node = pe.Node(
         niu.Function(
@@ -420,7 +420,7 @@ def init_dwi_preproc_wf(
         name="register_to_eddy_out",
     )
     register_to_eddy_out.synchronize = True
-    register_to_eddy_out._mem_gb = 1
+    register_to_eddy_out._mem_gb = 2
 
     resample_sigma = pe.MapNode(
         ApplyAffine(),
@@ -428,7 +428,7 @@ def init_dwi_preproc_wf(
         name="resample_sigma",
     )
     resample_sigma.synchronize = True
-    resample_sigma._mem_gb = 1
+    resample_sigma._mem_gb = 2
 
     denoise_node = pe.Node(
         niu.Function(
@@ -440,9 +440,9 @@ def init_dwi_preproc_wf(
         name="denoise",
     )
     if denoise_strategy == 'nlsam':
-        denoise_node._mem_gb = omp_nthreads*6
-    else:
         denoise_node._mem_gb = omp_nthreads*4
+    else:
+        denoise_node._mem_gb = omp_nthreads*2
     denoise_node.n_procs = omp_nthreads
 
     which('N4BiasFieldCorrection')
@@ -582,9 +582,9 @@ def init_dwi_preproc_wf(
                      name='Bias_b0')
         n4.inputs.num_threads = omp_nthreads
         n4.n_procs = omp_nthreads
-        n4._mem_gb = omp_nthreads*4
+        n4._mem_gb = omp_nthreads*2
         n4.interface.n_procs = omp_nthreads
-        n4.interface.mem_gb = omp_nthreads*4
+        n4.interface.mem_gb = omp_nthreads*2
 
         split = pe.Node(fsl.Split(dimension='t'), name='SplitDWIs')
         split._mem_gb = 1
@@ -701,7 +701,7 @@ def init_base_wf(
             else:
                 res_factor = 1
             exp_bytes = res_factor * 24 * dwi_img.shape[0] * dwi_img.shape[1] * dwi_img.shape[2] * dwi_img.shape[3]
-            eddy_mem_gb = core.bytesto(exp_bytes, to='g', bsize=1024)*omp_nthreads*4
+            eddy_mem_gb = core.bytesto(exp_bytes, to='g', bsize=1024)*omp_nthreads*2
             print('eddy_mem_gb: ' + str(eddy_mem_gb))
             wf = init_dwi_preproc_wf(participant,
                                      session,
@@ -742,7 +742,7 @@ def init_base_wf(
             else:
                 res_factor = 1
             exp_bytes = res_factor * 24 * dwi_img.shape[0] * dwi_img.shape[1] * dwi_img.shape[2] * dwi_img.shape[3]
-            eddy_mem_gb = core.bytesto(exp_bytes, to='g', bsize=1024)*omp_nthreads*4
+            eddy_mem_gb = core.bytesto(exp_bytes, to='g', bsize=1024)*omp_nthreads*2
             print('eddy_mem_gb: ' + str(eddy_mem_gb))
             meta_inputnode = pe.Node(niu.IdentityInterface(fields=["dwi_files",
                                                                    "fbvecs",
@@ -861,10 +861,10 @@ def init_base_wf(
             wf.get_node(wf_dwi_preproc.name).get_node('apply_mask_final')._mem_gb = 1
             wf.get_node(wf_dwi_preproc.name).get_node('apply_mask_final').interface._mem_gb = 1
             wf.get_node(wf_dwi_preproc.name).get_node('id_outliers_from_eddy_report')._mem_gb = 1
-            wf.get_node(wf_dwi_preproc.name).get_node('drop_outliers_from_eddy_report')._mem_gb = 2
-            wf.get_node(wf_dwi_preproc.name).get_node('drop_outliers_from_eddy_report').interface._mem_gb = 2
-            wf.get_node(wf_dwi_preproc.name).get_node('drop_raw_outliers_from_eddy_report')._mem_gb = 2
-            wf.get_node(wf_dwi_preproc.name).get_node('drop_raw_outliers_from_eddy_report').interface._mem_gb = 2
+            wf.get_node(wf_dwi_preproc.name).get_node('drop_outliers_from_eddy_report')._mem_gb = 4
+            wf.get_node(wf_dwi_preproc.name).get_node('drop_outliers_from_eddy_report').interface._mem_gb = 4
+            wf.get_node(wf_dwi_preproc.name).get_node('drop_raw_outliers_from_eddy_report')._mem_gb = 4
+            wf.get_node(wf_dwi_preproc.name).get_node('drop_raw_outliers_from_eddy_report').interface._mem_gb = 4
             wf.get_node(wf_dwi_preproc.name).get_node('SplitDWIs')._mem_gb = 1
             wf.get_node(wf_dwi_preproc.name).get_node('SplitDWIs').interface._mem_gb = 1
             wf.get_node(wf_dwi_preproc.name).get_node('RemoveBiasOfDWIs')._mem_gb = 1
@@ -873,16 +873,16 @@ def init_base_wf(
             wf.get_node(wf_dwi_preproc.name).get_node('RemoveNegative').interface._mem_gb = 1
             wf.get_node(wf_dwi_preproc.name).get_node('MergeDWIs')._mem_gb = 1
             wf.get_node(wf_dwi_preproc.name).get_node('MergeDWIs').interface._mem_gb = 1
-            wf.get_node(wf_dwi_preproc.name).get_node('split_raw_dwis_node').interface._mem_gb = 2
-            wf.get_node(wf_dwi_preproc.name).get_node('split_raw_dwis_node')._mem_gb = 2
-            wf.get_node(wf_dwi_preproc.name).get_node('split_eddy_dwis_node').interface._mem_gb = 2
-            wf.get_node(wf_dwi_preproc.name).get_node('split_eddy_dwis_node')._mem_gb = 2
+            wf.get_node(wf_dwi_preproc.name).get_node('split_raw_dwis_node').interface._mem_gb = 4
+            wf.get_node(wf_dwi_preproc.name).get_node('split_raw_dwis_node')._mem_gb = 4
+            wf.get_node(wf_dwi_preproc.name).get_node('split_eddy_dwis_node').interface._mem_gb = 4
+            wf.get_node(wf_dwi_preproc.name).get_node('split_eddy_dwis_node')._mem_gb = 4
             wf.get_node(wf_dwi_preproc.name).get_node('split_sigma_node').interface._mem_gb = 1
             wf.get_node(wf_dwi_preproc.name).get_node('split_sigma_node')._mem_gb = 1
             wf.get_node(wf_dwi_preproc.name).get_node('merge_sigma').interface._mem_gb = 1
             wf.get_node(wf_dwi_preproc.name).get_node('merge_sigma')._mem_gb = 1
-            wf.get_node(wf_dwi_preproc.name).get_node('register_to_eddy_out').interface._mem_gb = 1
-            wf.get_node(wf_dwi_preproc.name).get_node('register_to_eddy_out')._mem_gb = 1
+            wf.get_node(wf_dwi_preproc.name).get_node('register_to_eddy_out').interface._mem_gb = 2
+            wf.get_node(wf_dwi_preproc.name).get_node('register_to_eddy_out')._mem_gb = 2
             wf.get_node(wf_dwi_preproc.name).get_node('resample_sigma').interface._mem_gb = 1
             wf.get_node(wf_dwi_preproc.name).get_node('resample_sigma')._mem_gb = 1
 
@@ -892,9 +892,9 @@ def init_base_wf(
                 wf.get_node(wf_dwi_preproc.name).get_node('topup').interface.n_procs = 8
                 wf.get_node(wf_dwi_preproc.name).get_node('topup').interface.mem_gb = 14
             wf.get_node(wf_dwi_preproc.name).get_node('Bias_b0')._n_procs = omp_nthreads
-            wf.get_node(wf_dwi_preproc.name).get_node('Bias_b0')._mem_gb = omp_nthreads*4
+            wf.get_node(wf_dwi_preproc.name).get_node('Bias_b0')._mem_gb = omp_nthreads*2
             wf.get_node(wf_dwi_preproc.name).get_node('Bias_b0').interface.n_procs = omp_nthreads
-            wf.get_node(wf_dwi_preproc.name).get_node('Bias_b0').interface.mem_gb = omp_nthreads*4
+            wf.get_node(wf_dwi_preproc.name).get_node('Bias_b0').interface.mem_gb = omp_nthreads*2
             wf.get_node(wf_dwi_preproc.name).get_node('eddy')._n_procs = omp_nthreads
             wf.get_node(wf_dwi_preproc.name).get_node('eddy')._mem_gb = eddy_mem_gb
             wf.get_node(wf_dwi_preproc.name).get_node('eddy').interface.n_procs = omp_nthreads
@@ -905,9 +905,9 @@ def init_base_wf(
             wf.get_node(wf_dwi_preproc.name).get_node('estimate_noise')._mem_gb = omp_nthreads*2
             wf.get_node(wf_dwi_preproc.name).get_node('denoise')._n_procs = omp_nthreads
             if denoise_strategy == 'nlsam':
-                wf.get_node(wf_dwi_preproc.name).get_node('denoise')._mem_gb = omp_nthreads*6
-            else:
                 wf.get_node(wf_dwi_preproc.name).get_node('denoise')._mem_gb = omp_nthreads*4
+            else:
+                wf.get_node(wf_dwi_preproc.name).get_node('denoise')._mem_gb = omp_nthreads*2
 
 
         cfg = dict(execution={'stop_on_first_crash': False, 'crashfile_format': 'txt', 'parameterize_dirs': True,
@@ -961,7 +961,7 @@ def wf_multi_session(bids_dict,
             else:
                 res_factor = 1
             exp_bytes = res_factor * 24 * dwi_img.shape[0] * dwi_img.shape[1] * dwi_img.shape[2] * dwi_img.shape[3]
-            eddy_mem_gb = core.bytesto(exp_bytes, to='g', bsize=1024)*omp_nthreads*4
+            eddy_mem_gb = core.bytesto(exp_bytes, to='g', bsize=1024)*omp_nthreads*2
             print('eddy_mem_gb: ' + str(eddy_mem_gb))
             fbvec = bids_dict[participant][session][1]['fbvec']
             fbval = bids_dict[participant][session][1]['fbval']
@@ -1013,10 +1013,10 @@ def wf_multi_session(bids_dict,
         wf_multi.get_node(wf.name).get_node('apply_mask_final')._mem_gb = 1
         wf_multi.get_node(wf.name).get_node('apply_mask_final').interface._mem_gb = 1
         wf_multi.get_node(wf.name).get_node('id_outliers_from_eddy_report')._mem_gb = 1
-        wf_multi.get_node(wf.name).get_node('drop_outliers_from_eddy_report')._mem_gb = 2
-        wf_multi.get_node(wf.name).get_node('drop_outliers_from_eddy_report').interface._mem_gb = 2
-        wf_multi.get_node(wf.name).get_node('drop_raw_outliers_from_eddy_report')._mem_gb = 2
-        wf_multi.get_node(wf.name).get_node('drop_raw_outliers_from_eddy_report').interface._mem_gb = 2
+        wf_multi.get_node(wf.name).get_node('drop_outliers_from_eddy_report')._mem_gb = 4
+        wf_multi.get_node(wf.name).get_node('drop_outliers_from_eddy_report').interface._mem_gb = 4
+        wf_multi.get_node(wf.name).get_node('drop_raw_outliers_from_eddy_report')._mem_gb = 4
+        wf_multi.get_node(wf.name).get_node('drop_raw_outliers_from_eddy_report').interface._mem_gb = 4
         wf_multi.get_node(wf.name).get_node('SplitDWIs')._mem_gb = 1
         wf_multi.get_node(wf.name).get_node('SplitDWIs').interface._mem_gb = 1
         wf_multi.get_node(wf.name).get_node('RemoveBiasOfDWIs')._mem_gb = 1
@@ -1025,16 +1025,16 @@ def wf_multi_session(bids_dict,
         wf_multi.get_node(wf.name).get_node('RemoveNegative').interface._mem_gb = 1
         wf_multi.get_node(wf.name).get_node('MergeDWIs')._mem_gb = 1
         wf_multi.get_node(wf.name).get_node('MergeDWIs').interface._mem_gb = 1
-        wf_multi.get_node(wf.name).get_node('split_raw_dwis_node').interface._mem_gb = 2
-        wf_multi.get_node(wf.name).get_node('split_raw_dwis_node')._mem_gb = 2
-        wf_multi.get_node(wf.name).get_node('split_eddy_dwis_node').interface._mem_gb = 2
-        wf_multi.get_node(wf.name).get_node('split_eddy_dwis_node')._mem_gb = 2
+        wf_multi.get_node(wf.name).get_node('split_raw_dwis_node').interface._mem_gb = 4
+        wf_multi.get_node(wf.name).get_node('split_raw_dwis_node')._mem_gb = 4
+        wf_multi.get_node(wf.name).get_node('split_eddy_dwis_node').interface._mem_gb = 4
+        wf_multi.get_node(wf.name).get_node('split_eddy_dwis_node')._mem_gb = 4
         wf_multi.get_node(wf.name).get_node('split_sigma_node').interface._mem_gb = 1
         wf_multi.get_node(wf.name).get_node('split_sigma_node')._mem_gb = 1
         wf_multi.get_node(wf.name).get_node('merge_sigma').interface._mem_gb = 1
         wf_multi.get_node(wf.name).get_node('merge_sigma')._mem_gb = 1
-        wf_multi.get_node(wf.name).get_node('register_to_eddy_out').interface._mem_gb = 1
-        wf_multi.get_node(wf.name).get_node('register_to_eddy_out')._mem_gb = 1
+        wf_multi.get_node(wf.name).get_node('register_to_eddy_out').interface._mem_gb = 2
+        wf_multi.get_node(wf.name).get_node('register_to_eddy_out')._mem_gb = 2
         wf_multi.get_node(wf.name).get_node('resample_sigma').interface._mem_gb = 1
         wf_multi.get_node(wf.name).get_node('resample_sigma')._mem_gb = 1
 
@@ -1044,9 +1044,9 @@ def wf_multi_session(bids_dict,
             wf_multi.get_node(wf.name).get_node('topup').interface.n_procs = 8
             wf_multi.get_node(wf.name).get_node('topup').interface.mem_gb = 14
         wf_multi.get_node(wf.name).get_node('Bias_b0')._n_procs = omp_nthreads
-        wf_multi.get_node(wf.name).get_node('Bias_b0')._mem_gb = omp_nthreads*4
+        wf_multi.get_node(wf.name).get_node('Bias_b0')._mem_gb = omp_nthreads*2
         wf_multi.get_node(wf.name).get_node('Bias_b0').interface.n_procs = omp_nthreads
-        wf_multi.get_node(wf.name).get_node('Bias_b0').interface.mem_gb = omp_nthreads*4
+        wf_multi.get_node(wf.name).get_node('Bias_b0').interface.mem_gb = omp_nthreads*2
         wf_multi.get_node(wf.name).get_node('eddy')._n_procs = omp_nthreads
         wf_multi.get_node(wf.name).get_node('eddy')._mem_gb = eddy_mem_gb
         wf_multi.get_node(wf.name).get_node('eddy').interface.n_procs = omp_nthreads
@@ -1057,9 +1057,9 @@ def wf_multi_session(bids_dict,
         wf_multi.get_node(wf.name).get_node('estimate_noise')._mem_gb = omp_nthreads*2
         wf_multi.get_node(wf.name).get_node('denoise')._n_procs = omp_nthreads
         if denoise_strategy == 'nlsam':
-            wf_multi.get_node(wf.name).get_node('denoise')._mem_gb = omp_nthreads*6
-        else:
             wf_multi.get_node(wf.name).get_node('denoise')._mem_gb = omp_nthreads*4
+        else:
+            wf_multi.get_node(wf.name).get_node('denoise')._mem_gb = omp_nthreads*2
 
     else:
         for session in sessions:
@@ -1087,7 +1087,7 @@ def wf_multi_session(bids_dict,
             else:
                 res_factor = 1
             exp_bytes = res_factor * 24 * dwi_img.shape[0] * dwi_img.shape[1] * dwi_img.shape[2] * dwi_img.shape[3]
-            eddy_mem_gb = core.bytesto(exp_bytes, to='g', bsize=1024)*omp_nthreads*4
+            eddy_mem_gb = core.bytesto(exp_bytes, to='g', bsize=1024)*omp_nthreads*2
             print('eddy_mem_gb: ' + str(eddy_mem_gb))
             meta_inputnode = pe.Node(niu.IdentityInterface(fields=["dwi_files",
                                                                    "fbvecs",
@@ -1209,10 +1209,10 @@ def wf_multi_session(bids_dict,
         wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('apply_mask_final')._mem_gb = 1
         wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('apply_mask_final').interface._mem_gb = 1
         wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('id_outliers_from_eddy_report')._mem_gb = 1
-        wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('drop_outliers_from_eddy_report')._mem_gb = 2
-        wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('drop_outliers_from_eddy_report').interface._mem_gb = 2
-        wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('drop_raw_outliers_from_eddy_report')._mem_gb = 2
-        wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('drop_raw_outliers_from_eddy_report').interface._mem_gb = 2
+        wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('drop_outliers_from_eddy_report')._mem_gb = 4
+        wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('drop_outliers_from_eddy_report').interface._mem_gb = 4
+        wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('drop_raw_outliers_from_eddy_report')._mem_gb = 4
+        wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('drop_raw_outliers_from_eddy_report').interface._mem_gb = 4
         wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('SplitDWIs')._mem_gb = 1
         wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('SplitDWIs').interface._mem_gb = 1
         wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('RemoveBiasOfDWIs')._mem_gb = 1
@@ -1221,16 +1221,16 @@ def wf_multi_session(bids_dict,
         wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('RemoveNegative').interface._mem_gb = 1
         wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('MergeDWIs')._mem_gb = 1
         wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('MergeDWIs').interface._mem_gb = 1
-        wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('split_raw_dwis_node').interface._mem_gb = 2
-        wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('split_raw_dwis_node')._mem_gb = 2
-        wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('split_eddy_dwis_node').interface._mem_gb = 2
-        wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('split_eddy_dwis_node')._mem_gb = 2
+        wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('split_raw_dwis_node').interface._mem_gb = 4
+        wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('split_raw_dwis_node')._mem_gb = 4
+        wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('split_eddy_dwis_node').interface._mem_gb = 4
+        wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('split_eddy_dwis_node')._mem_gb = 4
         wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('split_sigma_node').interface._mem_gb = 1
         wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('split_sigma_node')._mem_gb = 1
         wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('merge_sigma').interface._mem_gb = 1
         wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('merge_sigma')._mem_gb = 1
-        wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('register_to_eddy_out').interface._mem_gb = 1
-        wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('register_to_eddy_out')._mem_gb = 1
+        wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('register_to_eddy_out').interface._mem_gb = 2
+        wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('register_to_eddy_out')._mem_gb = 2
         wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('resample_sigma').interface._mem_gb = 1
         wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('resample_sigma')._mem_gb = 1
 
@@ -1240,9 +1240,9 @@ def wf_multi_session(bids_dict,
             wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('topup').interface.n_procs = 8
             wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('topup').interface.mem_gb = 14
         wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('Bias_b0')._n_procs = omp_nthreads
-        wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('Bias_b0')._mem_gb = omp_nthreads*4
+        wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('Bias_b0')._mem_gb = omp_nthreads*2
         wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('Bias_b0').interface.n_procs = omp_nthreads
-        wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('Bias_b0').interface.mem_gb = omp_nthreads*4
+        wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('Bias_b0').interface.mem_gb = omp_nthreads*2
         wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('eddy')._n_procs = omp_nthreads
         wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('eddy')._mem_gb = eddy_mem_gb
         wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('eddy').interface.n_procs = omp_nthreads
@@ -1253,9 +1253,9 @@ def wf_multi_session(bids_dict,
         wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('estimate_noise')._mem_gb = omp_nthreads*2
         wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('denoise')._n_procs = omp_nthreads
         if denoise_strategy == 'nlsam':
-            wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('denoise')._mem_gb = omp_nthreads*6
-        else:
             wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('denoise')._mem_gb = omp_nthreads*4
+        else:
+            wf_multi.get_node(wf.name).get_node(wf_dwi_preproc.name).get_node('denoise')._mem_gb = omp_nthreads*2
 
         cfg = dict(execution={'stop_on_first_crash': False, 'crashfile_format': 'txt', 'parameterize_dirs': True,
                               'display_variable': ':0', 'job_finished_timeout': 120, 'matplotlib_backend': 'Agg',

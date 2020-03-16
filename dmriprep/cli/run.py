@@ -223,7 +223,7 @@ def build_workflow(opts, retval):
             "parameterize_dirs": True,
             "remove_unnecessary_outputs": False,
             "remove_node_directories": False,
-            "poll_sleep_duration": 0.1,
+            "poll_sleep_duration": 1,
         }
     )
     for key in cfg.keys():
