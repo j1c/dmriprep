@@ -51,7 +51,7 @@ def get_parser():
                         help='A space delimited list of session identifiers or a single '
                              'identifier (the ses- prefix can be removed)')
     g_perfm = parser.add_argument_group('Options to handle performance')
-    g_perfm.add_argument('--plugin', action='store', type=str, default='MultiProc',
+    g_perfm.add_argument('--plugin', action='store', type=str, default='LegacyMultiProc',
                          help='Plugin type. Options include MultiProc or Linear')
     g_perfm.add_argument('--nprocs', '--n_cpus', action='store', type=int, default=8,
                          help='Maximum number of threads across all processes. Minimum required is 8.')
