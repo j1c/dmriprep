@@ -263,7 +263,7 @@ def topup_inputs_from_dwi_files(dwi_file, sesdir, spec_acqp, b0_vols, b0s, vol_l
     import pkg_resources
     from shutil import copyfile
     import random
-
+    import glob
     """Create a datain spec and a slspec from a list of dwi files."""
     # Write the datain.txt file
     datain_lines = []
@@ -793,7 +793,7 @@ def denoise(
     sigma_path,
     omp_nthreads,
     N=1,
-    patch_radius=2,
+    patch_radius=3,
     tau_factor=2.3,
     block_radius=1,
     n_iter=10,
