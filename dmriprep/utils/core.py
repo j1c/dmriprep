@@ -461,7 +461,7 @@ def id_outliers_fn(outlier_report, threshold, dwi_file):
     return drop_scans, outpath
 
 
-def drop_outliers_fn(in_file, in_bval, in_bvec, drop_scans, in_sigma=None, perc_missing=0.15):
+def drop_outliers_fn(in_file, in_bval, in_bvec, drop_scans, in_sigma=None, perc_missing=0.30):
     """Drop outlier volumes from dwi file
     Parameters
     ----------

@@ -135,9 +135,9 @@ ENV MKL_NUM_THREADS=4 \
     OMP_NUM_THREADS=4
 
 # Create a shared $HOME directory
-RUN useradd --no-user-group --create-home --shell /bin/bash dmriprep
-WORKDIR /home/dmriprep
-ENV HOME="/home/dmriprep"
+RUN useradd --no-user-group --create-home --shell /bin/bash dpisner
+WORKDIR /home/dpisner
+ENV HOME="/home/dpisner"
 
 # Precaching fonts, set 'Agg' as default backend for matplotlib
 RUN python -c "from matplotlib import font_manager" \
@@ -151,16 +151,16 @@ RUN python -c "from matplotlib import font_manager" \
     && pip install ipython cython parse \
     && pip install --no-cache-dir https://github.com/samuelstjean/nlsam/archive/master.zip
 
-RUN chown -R dmriprep:dmriprep /usr/local/miniconda/lib/python3.7 \
-    && chown -R dmriprep:dmriprep /home/dmriprep \
-    && chmod -R 777 /home/dmriprep \
+RUN chown -R dpisner:dpisner /usr/local/miniconda/lib/python3.7 \
+    && chown -R dpisner:dpisner /home/dpisner \
+    && chmod -R 777 /home/dpisner \
     && find $HOME -type d -exec chmod go=u {} + \
     && find $HOME -type f -exec chmod go=u {} + \
     && mkdir /inputs \
     && chmod -R 777 /inputs \
     && mkdir /outputs \
     && chmod -R 777 /outputs \
-    && echo "dmriprep ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/user \
+    && echo "dpisner ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/user \
     && chmod a+s -R /usr/local \
     && chmod -R 775 /usr/local/miniconda/lib/python3.7/site-packages \
     && chmod -R 777 /usr/local/miniconda/lib/python3.7/site-packages/dmriprep*; sync \
@@ -176,7 +176,7 @@ ENV IS_DOCKER_8395080871=1
 
 RUN ldconfig
 WORKDIR /tmp/
-USER dmriprep
+USER dpisner
 ENTRYPOINT ["/usr/local/miniconda/bin/dmriprep"]
 
 ARG BUILD_DATE

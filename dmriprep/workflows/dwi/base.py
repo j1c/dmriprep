@@ -158,9 +158,9 @@ def init_dwi_preproc_wf(
     art_node.inputs.save_plot = False
     art_node.inputs.use_norm = True
     # scan-to-scan head-motion composite changes (pretty conservative)
-    art_node.inputs.norm_threshold = 3
+    art_node.inputs.norm_threshold = 4
     # z-score scan-to-scan global signal changes (pretty conservative)
-    art_node.inputs.zintensity_threshold = 9
+    art_node.inputs.zintensity_threshold = 10
     art_node.inputs.mask_type = "spm_global"
     art_node.inputs.parameter_source = "FSL"
     art_node._mem_gb = 1
