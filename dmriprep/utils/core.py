@@ -17,7 +17,7 @@ def make_gtab(fbval, fbvec, sesdir, final, b0_thr=100):
     else:
         raise ValueError("Either bvals or bvecs files not found (or rescaling failed)!")
 
-    gtab_file = fname_presuffix(fbval, suffix="_gtab_{}_{}.pkl".format(strftime('%Y%m%d_%H%M%S'), uuid.uuid4()), use_ext=False)
+    gtab_file = fname_presuffix(fbval, suffix="_gtab_{}_{}.pkl".format(strftime('%Y%m%d_%H%M%S'), uuid.uuid4()), newpath=sesdir, use_ext=False)
 
     # Creating the gradient table
     gtab = gradient_table(bvals, bvecs, atol=1)
@@ -58,7 +58,7 @@ def rename_final_preprocessed_file(in_file, sesdir, clean=True):
     shutil.copy(in_file, out_file)
 
     if clean is True:
-        tmp_paths = ['/gibbs_free_data*', '/dmri_tmp', '/preprocessed_data_denoised*', '/*dwi_reor_RAS*.nii.gz', '/topup_imain.nii.gz', '/*.txt', '/bvecs_reor.bvec', '/*.cnf']
+        tmp_paths = ['/gibbs_free_data*', '/dmri_tmp', '/preprocessed_data_denoised*', '/*dwi_reor_RAS*.nii.gz', '/topup_imain.nii.gz', '/*.txt', '/*.cnf']
         for tmp_path in tmp_paths:
             tmp_path_full = sesdir + tmp_path
             if os.path.isdir(tmp_path_full):
@@ -164,6 +164,8 @@ def is_hemispherical(vecs):
 
 
 def correct_vecs_and_make_b0s(fbval, fbvec, dwi_file, sesdir):
+    import os
+    import glob
     from dipy.io import read_bvals_bvecs
     from dmriprep.utils.core import make_gtab, rescale_bvec, is_hemispherical, make_mean_b0
 
@@ -175,6 +177,8 @@ def correct_vecs_and_make_b0s(fbval, fbvec, dwi_file, sesdir):
     all_b0s_file = "%s%s" % (namer_dir, "/all_b0s.nii.gz")
 
     # loading bvecs/bvals
+    if not os.path.isfile(fbvec):
+        fbvec = glob.glob(os.path.dirname(fbvec) + '/*.bvec')[0]
     bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
     bvecs[np.where(np.any(abs(bvecs) >= 10, axis=1) == True)] = [1, 0, 0]
     bvecs[np.where(bvals == 0)] = 0

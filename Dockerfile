@@ -151,8 +151,8 @@ RUN python -c "from matplotlib import font_manager" \
     && pip install ipython cython parse \
     && pip install --no-cache-dir https://github.com/samuelstjean/nlsam/archive/master.zip
 
-RUN chown -R dpisner:dpisner /usr/local/miniconda/lib/python3.7 \
-    && chown -R dpisner:dpisner /home/dpisner \
+RUN chown -R dpisner /usr/local/miniconda/lib/python3.7 \
+    && chown -R dpisner /home/dpisner \
     && chmod -R 777 /home/dpisner \
     && find $HOME -type d -exec chmod go=u {} + \
     && find $HOME -type f -exec chmod go=u {} + \
