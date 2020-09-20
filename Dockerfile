@@ -149,7 +149,8 @@ RUN python -c "from matplotlib import font_manager" \
     && cd dmriprep \
     && python setup.py install \
     && pip install ipython cython parse \
-    && pip install --no-cache-dir https://github.com/samuelstjean/nlsam/archive/master.zip
+    && pip install --no-cache-dir https://github.com/samuelstjean/nlsam/archive/master.zip \
+    && pip install -U llvmlite==0.32.1
 
 RUN chown -R dpisner /usr/local/miniconda/lib/python3.7 \
     && chown -R dpisner /home/dpisner \
