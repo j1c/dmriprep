@@ -702,7 +702,7 @@ def init_base_wf(
             else:
                 res_factor = 1
             exp_bytes = res_factor * 24 * dwi_img.shape[0] * dwi_img.shape[1] * dwi_img.shape[2] * dwi_img.shape[3]
-            eddy_mem_gb = core.bytesto(exp_bytes, to='g', bsize=1024)*omp_nthreads*2
+            eddy_mem_gb = core.bytesto(exp_bytes, to='g', bsize=1024)*omp_nthreads/2
             print('eddy_mem_gb: ' + str(eddy_mem_gb))
             wf = init_dwi_preproc_wf(participant,
                                      session,
@@ -743,7 +743,7 @@ def init_base_wf(
             else:
                 res_factor = 1
             exp_bytes = res_factor * 24 * dwi_img.shape[0] * dwi_img.shape[1] * dwi_img.shape[2] * dwi_img.shape[3]
-            eddy_mem_gb = core.bytesto(exp_bytes, to='g', bsize=1024)*omp_nthreads*2
+            eddy_mem_gb = core.bytesto(exp_bytes, to='g', bsize=1024)*omp_nthreads/2
             print('eddy_mem_gb: ' + str(eddy_mem_gb))
             meta_inputnode = pe.Node(niu.IdentityInterface(fields=["dwi_files",
                                                                    "fbvecs",
@@ -962,7 +962,7 @@ def wf_multi_session(bids_dict,
             else:
                 res_factor = 1
             exp_bytes = res_factor * 24 * dwi_img.shape[0] * dwi_img.shape[1] * dwi_img.shape[2] * dwi_img.shape[3]
-            eddy_mem_gb = core.bytesto(exp_bytes, to='g', bsize=1024)*omp_nthreads*2
+            eddy_mem_gb = core.bytesto(exp_bytes, to='g', bsize=1024)*omp_nthreads/2
             print('eddy_mem_gb: ' + str(eddy_mem_gb))
             fbvec = bids_dict[participant][session][1]['fbvec']
             fbval = bids_dict[participant][session][1]['fbval']
@@ -1088,7 +1088,7 @@ def wf_multi_session(bids_dict,
             else:
                 res_factor = 1
             exp_bytes = res_factor * 24 * dwi_img.shape[0] * dwi_img.shape[1] * dwi_img.shape[2] * dwi_img.shape[3]
-            eddy_mem_gb = core.bytesto(exp_bytes, to='g', bsize=1024)*omp_nthreads*2
+            eddy_mem_gb = core.bytesto(exp_bytes, to='g', bsize=1024)*omp_nthreads / 2
             print('eddy_mem_gb: ' + str(eddy_mem_gb))
             meta_inputnode = pe.Node(niu.IdentityInterface(fields=["dwi_files",
                                                                    "fbvecs",
