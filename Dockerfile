@@ -149,8 +149,7 @@ RUN python -c "from matplotlib import font_manager" \
     && cd dmriprep \
     && python setup.py install \
     && pip install ipython cython parse \
-    && pip install --no-cache-dir https://github.com/samuelstjean/nlsam/archive/master.zip \
-    && pip install -U llvmlite==0.32.1
+    && pip install --no-cache-dir https://github.com/samuelstjean/nlsam/archive/master.zip
 
 RUN chown -R dpisner /usr/local/miniconda/lib/python3.7 \
     && chown -R dpisner /home/dpisner \
@@ -177,7 +176,6 @@ ENV IS_DOCKER_8395080871=1
 
 RUN ldconfig
 WORKDIR /tmp/
-USER dpisner
 ENTRYPOINT ["/usr/local/miniconda/bin/dmriprep"]
 
 ARG BUILD_DATE
