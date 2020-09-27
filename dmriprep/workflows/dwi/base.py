@@ -628,8 +628,9 @@ def init_dwi_preproc_wf(
                                                  ("imain_output", "in_file"),
                                                  ("topup_config", "config")]),
             (topup_node, make_mean_b0_node, [("out_corrected", "in_file")]),
-            (topup_node, eddy_node, [("out_movpar", "in_topup_movpar"),
-                                     ("out_fieldcoef", "in_topup_fieldcoef")]),
+            # (topup_node, eddy_node, [("out_movpar", "in_topup_movpar"),
+            #                          ("out_fieldcoef", "in_topup_fieldcoef")]),
+            (topup_node, eddy_node, [("out_fieldcoef", "field")]),
             (get_topup_inputs_node, eddy_node, [("datain_file_eddy", "in_acqp"), ("susceptibility_args", "args")]),
             (topup_node, eddy_quad, [("out_field", "field")]),
             (get_topup_inputs_node, eddy_quad, [("datain_file_eddy", "param_file")]),
@@ -836,13 +837,13 @@ def init_base_wf(
             wf.get_node(wf_dwi_preproc.name).get_node('bet_pre_moco').interface._mem_gb = 10
             wf.get_node(wf_dwi_preproc.name).get_node('apply_mask_pre_moco')._mem_gb = 10
             wf.get_node(wf_dwi_preproc.name).get_node('apply_mask_pre_moco').interface._mem_gb = 10
-            wf.get_node(wf_dwi_preproc.name).get_node('fsl_split')._mem_gb = 10
-            wf.get_node(wf_dwi_preproc.name).get_node('fsl_split').interface._mem_gb = 10
-            wf.get_node(wf_dwi_preproc.name).get_node('coregistration')._mem_gb = 10
-            wf.get_node(wf_dwi_preproc.name).get_node('coregistration').interface._mem_gb = 10
+            wf.get_node(wf_dwi_preproc.name).get_node('fsl_split')._mem_gb = 2
+            wf.get_node(wf_dwi_preproc.name).get_node('fsl_split').interface._mem_gb = 2
+            wf.get_node(wf_dwi_preproc.name).get_node('coregistration')._mem_gb = 2
+            wf.get_node(wf_dwi_preproc.name).get_node('coregistration').interface._mem_gb = 2
             wf.get_node(wf_dwi_preproc.name).get_node('get_motion_params')._mem_gb = 5
-            wf.get_node(wf_dwi_preproc.name).get_node('fsl_merge')._mem_gb = 10
-            wf.get_node(wf_dwi_preproc.name).get_node('fsl_merge').interface._mem_gb = 10
+            wf.get_node(wf_dwi_preproc.name).get_node('fsl_merge')._mem_gb = 5
+            wf.get_node(wf_dwi_preproc.name).get_node('fsl_merge').interface._mem_gb = 5
             wf.get_node(wf_dwi_preproc.name).get_node('art')._mem_gb = 10
             wf.get_node(wf_dwi_preproc.name).get_node('art').interface._mem_gb = 10
             wf.get_node(wf_dwi_preproc.name).get_node('drop_outliers_fn')._mem_gb = 10
