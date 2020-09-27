@@ -631,7 +631,8 @@ def init_dwi_preproc_wf(
             # (topup_node, eddy_node, [("out_movpar", "in_topup_movpar"),
             #                          ("out_fieldcoef", "in_topup_fieldcoef")]),
             (topup_node, eddy_node, [("out_fieldcoef", "field")]),
-            (get_topup_inputs_node, eddy_node, [("datain_file_eddy", "in_acqp"), ("susceptibility_args", "args")]),
+            # (get_topup_inputs_node, eddy_node, [("datain_file_eddy", "in_acqp"), ("susceptibility_args", "args")]),
+            (get_topup_inputs_node, eddy_node, [("datain_file_eddy", "in_acqp")]),
             (topup_node, eddy_quad, [("out_field", "field")]),
             (get_topup_inputs_node, eddy_quad, [("datain_file_eddy", "param_file")]),
         ])
