@@ -39,8 +39,8 @@ RUN curl -sSL "http://neuro.debian.net/lists/$( lsb_release -c | cut -f2 ).us-ca
                     git-annex-standalone && \
     apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-ENV FSLDIR="/opt/fsl-6.0.1" \
-    PATH="/opt/fsl-6.0.1/bin:$PATH" \
+ENV FSLDIR="/opt/fsl-6.0.4" \
+    PATH="/opt/fsl-6.0.4/bin:$PATH" \
     FSLOUTPUTTYPE="NIFTI_GZ"
 RUN apt-get update -qq \
     && apt-get install -y -q --no-install-recommends \
@@ -64,17 +64,17 @@ RUN apt-get update -qq \
     && echo "Downloading FSL ..." \
     && wget -q http://fsl.fmrib.ox.ac.uk/fsldownloads/fslinstaller.py \
     && chmod 775 fslinstaller.py \
-    && /fslinstaller.py -d /opt/fsl-6.0.1 -V 6.0.1 -q \
-    && rm -rf /opt/fsl-6.0.1/data \
-    && rm -rf /opt/fsl-6.0.1/bin/FSLeyes* \
-    && rm -rf /opt/fsl-6.0.1/src \
-    && rm -rf /opt/fsl-6.0.1/extras/src \
-    && rm -rf /opt/fsl-6.0.1/doc \
-    && rm -rf /opt/fsl-6.0.1/bin/fslview.app \
-    && rm -rf /opt/fsl-6.0.1/data/atlases \
-    && rm -rf /opt/fsl-6.0.1/data/first \
-    && rm -rf /opt/fsl-6.0.1/data/mist \
-    && rm -rf /opt/fsl-6.0.1/data/possum
+    && /fslinstaller.py -d /opt/fsl-6.0.4 -V 6.0.4 -q \
+    && rm -rf /opt/fsl-6.0.4/data \
+    && rm -rf /opt/fsl-6.0.4/bin/FSLeyes* \
+    && rm -rf /opt/fsl-6.0.4/src \
+    && rm -rf /opt/fsl-6.0.4/extras/src \
+    && rm -rf /opt/fsl-6.0.4/doc \
+    && rm -rf /opt/fsl-6.0.4/bin/fslview.app \
+    && rm -rf /opt/fsl-6.0.4/data/atlases \
+    && rm -rf /opt/fsl-6.0.4/data/first \
+    && rm -rf /opt/fsl-6.0.4/data/mist \
+    && rm -rf /opt/fsl-6.0.4/data/possum
 
 # Installing ANTs 2.2.0 (NeuroDocker build)
 ENV ANTSPATH=/usr/lib/ants
