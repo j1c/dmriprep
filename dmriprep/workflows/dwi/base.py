@@ -877,18 +877,18 @@ def init_base_wf(
             # wf.get_node(wf_dwi_preproc.name).get_node('RemoveNegative').interface._mem_gb = 20
             # wf.get_node(wf_dwi_preproc.name).get_node('MergeDWIs')._mem_gb = 10
             # wf.get_node(wf_dwi_preproc.name).get_node('MergeDWIs').interface._mem_gb = 10
-            wf.get_node(wf_dwi_preproc.name).get_node('split_raw_dwis_node').interface._mem_gb = 24
-            wf.get_node(wf_dwi_preproc.name).get_node('split_raw_dwis_node')._mem_gb = 24
-            wf.get_node(wf_dwi_preproc.name).get_node('split_eddy_dwis_node').interface._mem_gb = 24
-            wf.get_node(wf_dwi_preproc.name).get_node('split_eddy_dwis_node')._mem_gb = 24
-            wf.get_node(wf_dwi_preproc.name).get_node('split_sigma_node').interface._mem_gb = 10
-            wf.get_node(wf_dwi_preproc.name).get_node('split_sigma_node')._mem_gb = 10
+            wf.get_node(wf_dwi_preproc.name).get_node('split_raw_dwis_node').interface._mem_gb = 5
+            wf.get_node(wf_dwi_preproc.name).get_node('split_raw_dwis_node')._mem_gb = 5
+            wf.get_node(wf_dwi_preproc.name).get_node('split_eddy_dwis_node').interface._mem_gb = 5
+            wf.get_node(wf_dwi_preproc.name).get_node('split_eddy_dwis_node')._mem_gb = 5
+            wf.get_node(wf_dwi_preproc.name).get_node('split_sigma_node').interface._mem_gb = 5
+            wf.get_node(wf_dwi_preproc.name).get_node('split_sigma_node')._mem_gb = 5
             wf.get_node(wf_dwi_preproc.name).get_node('merge_sigma').interface._mem_gb = 10
             wf.get_node(wf_dwi_preproc.name).get_node('merge_sigma')._mem_gb = 10
-            wf.get_node(wf_dwi_preproc.name).get_node('register_to_eddy_out').interface._mem_gb = 20
-            wf.get_node(wf_dwi_preproc.name).get_node('register_to_eddy_out')._mem_gb = 20
-            wf.get_node(wf_dwi_preproc.name).get_node('resample_sigma').interface._mem_gb = 10
-            wf.get_node(wf_dwi_preproc.name).get_node('resample_sigma')._mem_gb = 10
+            wf.get_node(wf_dwi_preproc.name).get_node('register_to_eddy_out').interface._mem_gb = 2
+            wf.get_node(wf_dwi_preproc.name).get_node('register_to_eddy_out')._mem_gb = 2
+            wf.get_node(wf_dwi_preproc.name).get_node('resample_sigma').interface._mem_gb = 5
+            wf.get_node(wf_dwi_preproc.name).get_node('resample_sigma')._mem_gb = 5
 
             if sdc_method == 'topup':
                 wf.get_node(wf_dwi_preproc.name).get_node('topup')._n_procs = 8
