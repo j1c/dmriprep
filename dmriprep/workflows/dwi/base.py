@@ -731,10 +731,11 @@ def init_base_wf(
                 metadata_files.append(bids_dict[participant][session][acq]['metadata'])
 
             wf_multi_run_name = "%s%s%s%s" % ('wf_multi_run_', participant, '_', session)
-            wf = pe.Workflow(name=wf_multi_run_name)
-            wf.base_dir = work_dir / ('/' + wf_multi_run_name)
-            if not os.path.isdir(wf.base_dir):
-                os.mkdir(wf.base_dir)
+            base_dir = work_dir / ('/' + wf_multi_run_name)
+
+            wf = pe.Workflow(name=wf_multi_run_name, base_dir = base_dir)
+            if not base_dir.id_dir():
+                base_dir.mkdir(parents=True, exist_ok=True)
 
             dwi_img = nib.load(dwi_files[0])
             if vox_size == '2mm':
