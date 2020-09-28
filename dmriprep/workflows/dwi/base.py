@@ -587,14 +587,14 @@ def init_dwi_preproc_wf(
         n4.interface.mem_gb = omp_nthreads*2
 
         split = pe.Node(fsl.Split(dimension='t'), name='SplitDWIs')
-        split._mem_gb = 1
+        split._mem_gb = 5
         mult = pe.MapNode(fsl.MultiImageMaths(op_string='-div %s'), iterfield=['in_file'],
                           name='RemoveBiasOfDWIs')
-        mult._mem_gb = 2
+        mult._mem_gb = 10
         thres = pe.MapNode(fsl.Threshold(thresh=0.0), iterfield=['in_file'], name='RemoveNegative')
-        thres._mem_gb = 2
+        thres._mem_gb = 10
         merge = pe.Node(fsl.utils.Merge(dimension='t'), name='MergeDWIs')
-        merge._mem_gb = 1
+        merge._mem_gb = 5
 
         wf.connect([
             (denoise_node, split, [("denoised_file", "in_file")]),
@@ -870,12 +870,12 @@ def init_base_wf(
             wf.get_node(wf_dwi_preproc.name).get_node('drop_raw_outliers_from_eddy_report').interface._mem_gb = 24
             # wf.get_node(wf_dwi_preproc.name).get_node('SplitDWIs')._mem_gb = 10
             # wf.get_node(wf_dwi_preproc.name).get_node('SplitDWIs').interface._mem_gb = 10
-            wf.get_node(wf_dwi_preproc.name).get_node('RemoveBiasOfDWIs')._mem_gb = 20
-            wf.get_node(wf_dwi_preproc.name).get_node('RemoveBiasOfDWIs').interface._mem_gb = 20
-            wf.get_node(wf_dwi_preproc.name).get_node('RemoveNegative')._mem_gb = 20
-            wf.get_node(wf_dwi_preproc.name).get_node('RemoveNegative').interface._mem_gb = 20
-            wf.get_node(wf_dwi_preproc.name).get_node('MergeDWIs')._mem_gb = 10
-            wf.get_node(wf_dwi_preproc.name).get_node('MergeDWIs').interface._mem_gb = 10
+            # wf.get_node(wf_dwi_preproc.name).get_node('RemoveBiasOfDWIs')._mem_gb = 20
+            # wf.get_node(wf_dwi_preproc.name).get_node('RemoveBiasOfDWIs').interface._mem_gb = 20
+            # wf.get_node(wf_dwi_preproc.name).get_node('RemoveNegative')._mem_gb = 20
+            # wf.get_node(wf_dwi_preproc.name).get_node('RemoveNegative').interface._mem_gb = 20
+            # wf.get_node(wf_dwi_preproc.name).get_node('MergeDWIs')._mem_gb = 10
+            # wf.get_node(wf_dwi_preproc.name).get_node('MergeDWIs').interface._mem_gb = 10
             wf.get_node(wf_dwi_preproc.name).get_node('split_raw_dwis_node').interface._mem_gb = 24
             wf.get_node(wf_dwi_preproc.name).get_node('split_raw_dwis_node')._mem_gb = 24
             wf.get_node(wf_dwi_preproc.name).get_node('split_eddy_dwis_node').interface._mem_gb = 24
