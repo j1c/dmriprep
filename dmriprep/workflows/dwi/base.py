@@ -203,15 +203,15 @@ def init_dwi_preproc_wf(
     # Suppress gibbs ringing
     suppress_gibbs_node = pe.Node(
         niu.Function(
-            input_names=["in_file", "sesdir"],
+            input_names=["in_file", "sesdir", "omp_nthreads"],
             output_names=["gibbs_free_file"],
             function=core.suppress_gibbs,
             imports=import_list,
         ),
         name="suppress_gibbs",
     )
-    suppress_gibbs_node._mem_gb = 12
-    suppress_gibbs_node.n_procs = 6
+    suppress_gibbs_node._mem_gb = omp_nthreads*2
+    suppress_gibbs_node.n_procs = omp_nthreads
 
     extract_metadata_node = pe.Node(
         niu.Function(
@@ -497,7 +497,8 @@ def init_dwi_preproc_wf(
                 (drop_outliers_fn_node, estimate_noise_node, [("out_file", "in_file")]),
                 (btr_node_premoco, estimate_noise_node, [("mask_file", "mask")]),
                 (make_gtab_node, estimate_noise_node, [("gtab_file", "gtab_file")]),
-                (inputnode, suppress_gibbs_node, [("sesdir", "sesdir")]),
+                (inputnode, suppress_gibbs_node, [("sesdir", "sesdir"),
+                                                  ("omp_nthreads", "omp_nthreads")]),
                 (drop_outliers_fn_node, suppress_gibbs_node, [("out_file", "in_file")]),
                 (suppress_gibbs_node, eddy_node, [("gibbs_free_file", "in_file")]),
                 (inputnode, extract_metadata_node, [("metadata", "metadata")]),

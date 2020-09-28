@@ -733,14 +733,23 @@ def make_mean_b0(in_file):
     return mean_file_out
 
 
-def suppress_gibbs(in_file, sesdir):
+def suppress_gibbs(in_file, sesdir, omp_nthreads):
     from time import time
     from dipy.denoise.gibbs import gibbs_removal
+    from joblib import Parallel, delayed
+    import numpy as np
 
     t = time()
     img = nib.load(in_file)
     img_data = img.get_data()
-    gibbs_corr_data = gibbs_removal(img_data)
+    num_vols = img_data.shape[-1]
+    # gibbs_corr_data = gibbs_removal(img_data)
+    gibbs_corr_data = Parallel(
+        n_jobs=omnp_nthreads
+        )(
+            delayed(gibbs_removal)(img_data[:, :, :, idx]) for idx in range(num_vols)
+        )
+    gibbs_corr_data = np.moveaxis(np.stack(gibbs_corr_data), 0, 3)
     print("Time taken for gibbs suppression: ", -t + time())
     gibbs_free_file = sesdir + "/gibbs_free_data.nii.gz"
     nib.save(
