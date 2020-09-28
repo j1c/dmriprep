@@ -844,8 +844,8 @@ def init_base_wf(
             wf.get_node(wf_dwi_preproc.name).get_node('coregistration')._mem_gb = 2
             wf.get_node(wf_dwi_preproc.name).get_node('coregistration').interface._mem_gb = 2
             wf.get_node(wf_dwi_preproc.name).get_node('get_motion_params')._mem_gb = 5
-            wf.get_node(wf_dwi_preproc.name).get_node('fsl_merge')._mem_gb = 5
-            wf.get_node(wf_dwi_preproc.name).get_node('fsl_merge').interface._mem_gb = 5
+            wf.get_node(wf_dwi_preproc.name).get_node('fsl_merge')._mem_gb = 2
+            wf.get_node(wf_dwi_preproc.name).get_node('fsl_merge').interface._mem_gb = 2
             wf.get_node(wf_dwi_preproc.name).get_node('art')._mem_gb = 10
             wf.get_node(wf_dwi_preproc.name).get_node('art').interface._mem_gb = 10
             wf.get_node(wf_dwi_preproc.name).get_node('drop_outliers_fn')._mem_gb = 10
@@ -868,8 +868,8 @@ def init_base_wf(
             wf.get_node(wf_dwi_preproc.name).get_node('drop_outliers_from_eddy_report').interface._mem_gb = 24
             wf.get_node(wf_dwi_preproc.name).get_node('drop_raw_outliers_from_eddy_report')._mem_gb = 24
             wf.get_node(wf_dwi_preproc.name).get_node('drop_raw_outliers_from_eddy_report').interface._mem_gb = 24
-            wf.get_node(wf_dwi_preproc.name).get_node('SplitDWIs')._mem_gb = 10
-            wf.get_node(wf_dwi_preproc.name).get_node('SplitDWIs').interface._mem_gb = 10
+            # wf.get_node(wf_dwi_preproc.name).get_node('SplitDWIs')._mem_gb = 10
+            # wf.get_node(wf_dwi_preproc.name).get_node('SplitDWIs').interface._mem_gb = 10
             wf.get_node(wf_dwi_preproc.name).get_node('RemoveBiasOfDWIs')._mem_gb = 20
             wf.get_node(wf_dwi_preproc.name).get_node('RemoveBiasOfDWIs').interface._mem_gb = 20
             wf.get_node(wf_dwi_preproc.name).get_node('RemoveNegative')._mem_gb = 20
