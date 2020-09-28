@@ -745,7 +745,7 @@ def suppress_gibbs(in_file, sesdir, omp_nthreads):
     num_vols = img_data.shape[-1]
     # gibbs_corr_data = gibbs_removal(img_data)
     gibbs_corr_data = Parallel(
-        n_jobs=omnp_nthreads
+        n_jobs=omp_nthreads
         )(
             delayed(gibbs_removal)(img_data[:, :, :, idx]) for idx in range(num_vols)
         )
