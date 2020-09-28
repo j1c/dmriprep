@@ -894,10 +894,10 @@ def init_base_wf(
                 wf.get_node(wf_dwi_preproc.name).get_node('topup')._mem_gb = 36
                 wf.get_node(wf_dwi_preproc.name).get_node('topup').interface.n_procs = 8
                 wf.get_node(wf_dwi_preproc.name).get_node('topup').interface.mem_gb = 36
-            wf.get_node(wf_dwi_preproc.name).get_node('Bias_b0')._n_procs = omp_nthreads
-            wf.get_node(wf_dwi_preproc.name).get_node('Bias_b0')._mem_gb = omp_nthreads*2
-            wf.get_node(wf_dwi_preproc.name).get_node('Bias_b0').interface.n_procs = omp_nthreads
-            wf.get_node(wf_dwi_preproc.name).get_node('Bias_b0').interface.mem_gb = omp_nthreads*2
+            # wf.get_node(wf_dwi_preproc.name).get_node('Bias_b0')._n_procs = omp_nthreads
+            # wf.get_node(wf_dwi_preproc.name).get_node('Bias_b0')._mem_gb = omp_nthreads*2
+            # wf.get_node(wf_dwi_preproc.name).get_node('Bias_b0').interface.n_procs = omp_nthreads
+            # wf.get_node(wf_dwi_preproc.name).get_node('Bias_b0').interface.mem_gb = omp_nthreads*2
             wf.get_node(wf_dwi_preproc.name).get_node('eddy')._n_procs = omp_nthreads
             wf.get_node(wf_dwi_preproc.name).get_node('eddy')._mem_gb = eddy_mem_gb
             wf.get_node(wf_dwi_preproc.name).get_node('eddy').interface.n_procs = omp_nthreads
