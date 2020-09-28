@@ -733,7 +733,7 @@ def init_base_wf(
             wf_multi_run_name = "%s%s%s%s" % ('wf_multi_run_', participant, '_', session)
             base_dir = work_dir / ('/' + wf_multi_run_name)
 
-            wf = pe.Workflow(name=wf_multi_run_name, base_dir = base_dir)
+            wf = pe.Workflow(name=wf_multi_run_name, base_dir = str(base_dir))
             if not base_dir.id_dir():
                 base_dir.mkdir(parents=True, exist_ok=True)
 
