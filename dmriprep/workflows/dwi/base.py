@@ -903,8 +903,8 @@ def init_base_wf(
             wf.get_node(wf_dwi_preproc.name).get_node('eddy')._mem_gb = eddy_mem_gb
             wf.get_node(wf_dwi_preproc.name).get_node('eddy').interface.n_procs = omp_nthreads
             wf.get_node(wf_dwi_preproc.name).get_node('eddy').interface.mem_gb = eddy_mem_gb
-            wf.get_node(wf_dwi_preproc.name).get_node('suppress_gibbs')._n_procs = 6
-            wf.get_node(wf_dwi_preproc.name).get_node('suppress_gibbs')._mem_gb = 36
+            wf.get_node(wf_dwi_preproc.name).get_node('suppress_gibbs')._n_procs = omp_nthreads
+            wf.get_node(wf_dwi_preproc.name).get_node('suppress_gibbs')._mem_gb = omp_nthreads*2
             wf.get_node(wf_dwi_preproc.name).get_node('estimate_noise')._n_procs = omp_nthreads
             wf.get_node(wf_dwi_preproc.name).get_node('estimate_noise')._mem_gb = omp_nthreads*2
             wf.get_node(wf_dwi_preproc.name).get_node('denoise')._n_procs = omp_nthreads
