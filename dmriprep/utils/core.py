@@ -228,7 +228,7 @@ def correct_vecs_and_make_b0s(fbval, fbvec, dwi_file, sesdir):
     print("Extracting b0's...")
     b0_vols = []
     dwi_img = nib.load(dwi_file)
-    dwi_data = dwi_img.get_data()
+    dwi_data = dwi_img.get_fdata()
     for b0 in b0s:
         print(b0)
         b0_vols.append(dwi_data[:, :, :, b0])
@@ -255,7 +255,7 @@ def get_b0s(dwi_file, gtab_file):
     print("Extracting b0's...")
     b0_vols = []
     dwi_img = nib.load(dwi_file)
-    dwi_data = dwi_img.get_data()
+    dwi_data = dwi_img.get_fdata()
     for b0 in b0s:
         print(b0)
         b0_vols.append(dwi_data[:, :, :, b0])
@@ -563,7 +563,7 @@ def drop_scans_from_4d(in_file, drop_scans):
     import os.path as op
     from nipype.utils.filemanip import fname_presuffix
     img = nib.load(op.abspath(in_file))
-    img_data = img.get_data()
+    img_data = img.get_fdata()
     img_data_thinned = np.delete(img_data, drop_scans, axis=3)
     if isinstance(img, nib.nifti1.Nifti1Image):
         img_thinned = nib.Nifti1Image(
@@ -721,7 +721,7 @@ def make_mean_b0(in_file):
     import time
 
     b0_img = nib.load(in_file)
-    b0_img_data = b0_img.get_data()
+    b0_img_data = b0_img.get_fdata()
     mean_b0 = np.mean(b0_img_data, axis=3, dtype=b0_img_data.dtype)
     mean_file_out = in_file.split(".nii.gz")[0] + "_mean_b0.nii.gz"
     nib.save(
@@ -741,7 +741,7 @@ def suppress_gibbs(in_file, sesdir, omp_nthreads):
 
     t = time()
     img = nib.load(in_file)
-    img_data = img.get_data()
+    img_data = img.get_fdata()
     # gibbs_corr_data = gibbs_removal(img_data)
 
     # reshape
