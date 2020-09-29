@@ -495,7 +495,7 @@ def drop_outliers_fn(in_file, in_bval, in_bvec, drop_scans, in_sigma=None, perc_
 
     if isinstance(drop_scans, str):
         try:
-            drop_scans = np.genfromtxt(drop_scans).tolist()
+            drop_scans = np.genfromtxt(drop_scans, dtype=int).tolist()
             if not isinstance(drop_scans, list):
                 drop_scans = [drop_scans]
 
@@ -513,7 +513,7 @@ def drop_outliers_fn(in_file, in_bval, in_bvec, drop_scans, in_sigma=None, perc_
                                                                           'This dataset is unuseable based on the '
                                                                           'given rejection threshold.')
     # drop 4d outliers from dwi
-    img_data = img.get_data()
+    img_data = img.get_fdata()
     img_data_thinned = np.delete(img_data, drop_scans, axis=3)
     if isinstance(img, nib.nifti1.Nifti1Image):
         img_thinned = nib.Nifti1Image(
