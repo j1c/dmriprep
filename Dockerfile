@@ -1,5 +1,7 @@
 # Use Ubuntu 16.04 LTS
-FROM ubuntu:xenial-20161213
+# FROM ubuntu:xenial-20161213
+FROM nvidia/cuda:9.1-base-ubuntu16.04
+
 
 # Pre-cache neurodebian key
 COPY docker/files/neurodebian.gpg /usr/local/etc/neurodebian.gpg
@@ -7,23 +9,23 @@ COPY docker/files/neurodebian.gpg /usr/local/etc/neurodebian.gpg
 # Prepare environment
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-                    curl \
-                    bzip2 \
-                    ca-certificates \
-                    xvfb \
-                    cython3 \
-                    build-essential \
-                    autoconf \
-                    libtool \
-                    pkg-config \
-		    vim \
-		    zip \
-		    unzip \
-		    wget \
-                    git && \
+    curl \
+    bzip2 \
+    ca-certificates \
+    xvfb \
+    cython3 \
+    build-essential \
+    autoconf \
+    libtool \
+    pkg-config \
+    vim \
+    zip \
+    unzip \
+    wget \
+    git && \
     curl -sL https://deb.nodesource.com/setup_10.x | bash - && \
     apt-get install -y --no-install-recommends \
-                    nodejs && \
+    nodejs && \
     apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
     curl -o pandoc-2.2.2.1-1-amd64.deb -sSL "https://github.com/jgm/pandoc/releases/download/2.2.2.1/pandoc-2.2.2.1-1-amd64.deb" && \
     dpkg -i pandoc-2.2.2.1-1-amd64.deb && \
@@ -35,8 +37,8 @@ RUN curl -sSL "http://neuro.debian.net/lists/$( lsb_release -c | cut -f2 ).us-ca
     (apt-key adv --refresh-keys --keyserver hkp://ha.pool.sks-keyservers.net 0xA5D32F012649A5A9 || true) && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
-                    afni=16.2.07~dfsg.1-5~nd16.04+1 \
-                    git-annex-standalone && \
+    afni=16.2.07~dfsg.1-5~nd16.04+1 \
+    git-annex-standalone && \
     apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 ENV FSLDIR="/opt/fsl-6.0.4" \
@@ -44,21 +46,21 @@ ENV FSLDIR="/opt/fsl-6.0.4" \
     FSLOUTPUTTYPE="NIFTI_GZ"
 RUN apt-get update -qq \
     && apt-get install -y -q --no-install-recommends \
-           bc \
-           dc \
-           file \
-           libfontconfig1 \
-           libfreetype6 \
-           libgl1-mesa-dev \
-           libglu1-mesa-dev \
-           libgomp1 \
-           libice6 \
-           libxcursor1 \
-           libxft2 \
-           libxinerama1 \
-           libxrandr2 \
-           libxrender1 \
-           libxt6 \
+    bc \
+    dc \
+    file \
+    libfontconfig1 \
+    libfreetype6 \
+    libgl1-mesa-dev \
+    libglu1-mesa-dev \
+    libgomp1 \
+    libice6 \
+    libxcursor1 \
+    libxft2 \
+    libxinerama1 \
+    libxrandr2 \
+    libxrender1 \
+    libxt6 \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
     && echo "Downloading FSL ..." \
@@ -110,20 +112,20 @@ ENV PATH="/usr/local/miniconda/bin:$PATH" \
 
 # Installing precomputed python packages
 RUN conda install -y python=3.7.1 \
-                     pip=19.1 \
-                     mkl=2018.0.3 \
-                     mkl-service \
-                     numpy=1.15.4 \
-                     scipy=1.1.0 \
-                     scikit-learn=0.19.1 \
-                     matplotlib=2.2.2 \
-                     pandas=0.23.4 \
-                     libxml2=2.9.8 \
-                     libxslt=1.1.32 \
-                     graphviz=2.40.1 \
-                     traits=4.6.0 \
-                     zlib; sync && \
-		     cython && \
+    pip=19.1 \
+    mkl=2018.0.3 \
+    mkl-service \
+    numpy=1.15.4 \
+    scipy=1.1.0 \
+    scikit-learn=0.19.1 \
+    matplotlib=2.2.2 \
+    pandas=0.23.4 \
+    libxml2=2.9.8 \
+    libxslt=1.1.32 \
+    graphviz=2.40.1 \
+    traits=4.6.0 \
+    zlib; sync && \
+    cython && \
     chmod -R a+rX /usr/local/miniconda; sync && \
     chmod 777 /usr/local/miniconda/bin/*; sync && \
     conda build purge-all; sync && \
@@ -165,12 +167,12 @@ RUN chown -R dpisner /usr/local/miniconda/lib/python3.7 \
     && chmod -R 775 /usr/local/miniconda/lib/python3.7/site-packages \
     && chmod -R 777 /usr/local/miniconda/lib/python3.7/site-packages/dmriprep*; sync \
     && apt-get purge -y --auto-remove \
-       git \
-       wget \
-       curl \
-       build-essential \
-       ca-certificates \
-       cython3
+    git \
+    wget \
+    curl \
+    build-essential \
+    ca-certificates \
+    cython3
 
 ENV IS_DOCKER_8395080871=1
 
@@ -182,10 +184,10 @@ ARG BUILD_DATE
 ARG VCS_REF
 ARG VERSION
 LABEL org.label-schema.build-date=$BUILD_DATE \
-      org.label-schema.name="dMRIPrep" \
-      org.label-schema.description="dMRIPrep - robust dMRI preprocessing tool" \
-      org.label-schema.url="http://dmriprep.org" \
-      org.label-schema.vcs-ref=$VCS_REF \
-      org.label-schema.vcs-url="https://github.com/nipreps/dmriprep" \
-      org.label-schema.version=$VERSION \
-      org.label-schema.schema-version="1.0"
+    org.label-schema.name="dMRIPrep" \
+    org.label-schema.description="dMRIPrep - robust dMRI preprocessing tool" \
+    org.label-schema.url="http://dmriprep.org" \
+    org.label-schema.vcs-ref=$VCS_REF \
+    org.label-schema.vcs-url="https://github.com/nipreps/dmriprep" \
+    org.label-schema.version=$VERSION \
+    org.label-schema.schema-version="1.0"
