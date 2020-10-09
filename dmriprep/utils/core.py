@@ -782,7 +782,8 @@ def estimate_sigma(in_file, gtab_file, mask, denoise_strategy, N=1, smooth_facto
     if denoise_strategy == "mppca" or denoise_strategy == "localpca":
         sigma = pca_noise_estimate(img_data, gtab, correct_bias=True, smooth=smooth_factor)
     elif denoise_strategy == "nlmeans":
-        sigma = estimate_sigma(img_data, N=N)
+        #sigma = estimate_sigma(img_data, N=N)
+        sigma = pca_noise_estimate(img_data, gtab, correct_bias=True, smooth=smooth_factor)
     elif denoise_strategy == 'nlsam':
         try:
             import nlsam
@@ -814,7 +815,7 @@ def denoise(
     sigma_path,
     omp_nthreads,
     N=1,
-    patch_radius=3,
+    patch_radius=4,
     tau_factor=2.3,
     block_radius=1,
     n_iter=10,
@@ -844,7 +845,7 @@ def denoise(
         if denoise_strategy == "mppca":
 
             print('Running Marchenko-Pastur(MP) PCA denoising...')
-            img_data_den = genpca(img_data, sigma=sigma_3d, mask=mask_data,
+            img_data_den = genpca(img_data, sigma=None, mask=mask_data,
                                   patch_radius=patch_radius,
                                   pca_method='eig', tau_factor=None,
                                   return_sigma=False, out_dtype=None)
