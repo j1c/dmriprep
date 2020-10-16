@@ -146,7 +146,7 @@ RUN python -c "from matplotlib import font_manager" \
     && pip install --upgrade pip \
     && apt-get update && apt-get install -y sudo gfortran liblapack-dev libopenblas-dev \
     && pip install ipython cython parse \
-    && git clone -b homecooked https://github.com/j1c/dmriprep.git dmriprep \
+    && git clone -b homecooked https://github.com/neurodata/dmriprep.git dmriprep \
     && cd dmriprep \
     && python setup.py install \
     && pip install ipython cython parse \
