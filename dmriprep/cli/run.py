@@ -257,19 +257,13 @@ def build_workflow(opts, retval):
     return
 
 
-def main():
+def main(opts=None):
     """Initializes main script from command-line call to generate single-subject or multi-subject workflow(s)"""
     import sys
     try:
         import dmriprep
     except ImportError:
         print('dmriprep not installed! Ensure that you are referencing the correct site-packages and using Python3.5+')
-
-    if len(sys.argv) < 1:
-        print("\nMissing command-line inputs! See help options with the -h flag.\n")
-        sys.exit()
-
-    opts = get_parser().parse_args()
 
     try:
         from multiprocessing import set_start_method, Process, Manager
@@ -290,4 +284,11 @@ def main():
 
 if __name__ == '__main__':
     __spec__ = "ModuleSpec(name='builtins', loader=<class '_frozen_importlib.BuiltinImporter'>)"
-    main()
+
+    if len(sys.argv) < 1:
+        print("\nMissing command-line inputs! See help options with the -h flag.\n")
+        sys.exit()
+
+    opts = get_parser().parse_args()
+
+    main(opts)
