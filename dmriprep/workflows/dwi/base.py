@@ -39,7 +39,7 @@ def init_dwi_preproc_wf(
         'warnings.filterwarnings("ignore")',
     ]
 
-    subdir = "%s%s%s" % (out_dir, "/", sub)
+    subdir = "%s%s%s" % (out_dir, "/sub-", sub)
     if not os.path.isdir(subdir):
         os.mkdir(subdir)
     sesdir = "%s%s%s%s%s%s" % (out_dir, "/sub-", sub, "/ses-", ses, "/dwi")
