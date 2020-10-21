@@ -44,7 +44,7 @@ def init_dwi_preproc_wf(
         os.mkdir(subdir)
     sesdir = "%s%s%s%s%s%s" % (out_dir, "/sub-", sub, "/ses-", ses, "/dwi")
     if not os.path.isdir(sesdir):
-        os.mkdir(sesdir)
+        os.makedirs(sesdir)
 
     eddy_cfg_file = pkg_resources.resource_filename('dmriprep.config', "eddy_params.json")
 

@@ -57,7 +57,7 @@ def init_dwi_concat_wf(dwi_files, fbvals, fbvecs, metadata_files, sub, ses, out_
         os.mkdir(subdir)
     sesdir = "%s%s%s%s%s%s" % (out_dir, "/sub-", sub, "/ses-", ses, "/dwi")
     if not os.path.isdir(sesdir):
-        os.mkdir(sesdir)
+        os.makedirs(sesdir)
 
     wf = pe.Workflow(name='dwi_concat_wf')
     wf.base_dir = '/tmp'
