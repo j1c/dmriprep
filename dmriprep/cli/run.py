@@ -265,6 +265,9 @@ def main(opts=None):
     except ImportError:
         print('dmriprep not installed! Ensure that you are referencing the correct site-packages and using Python3.5+')
 
+    if opts is None:
+        opts = get_parser().parse_args()
+
     try:
         from multiprocessing import set_start_method, Process, Manager
         set_start_method('forkserver')
