@@ -815,7 +815,7 @@ def denoise(
     sigma_path,
     omp_nthreads,
     N=1,
-    patch_radius=4,
+    patch_radius=2,
     tau_factor=2.3,
     block_radius=5,
     n_iter=10,
@@ -861,8 +861,8 @@ def denoise(
                 img_data,
                 sigma=sigma_3d,
                 mask=mask_data,
-                patch_radius=patch_radius-2,
-                block_radius=block_radius,
+                patch_radius=2,
+                block_radius=5,
                 rician=True,
             )
         elif denoise_strategy == 'nlsam':
