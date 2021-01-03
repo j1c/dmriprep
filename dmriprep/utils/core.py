@@ -815,7 +815,7 @@ def denoise(
     sigma_path,
     omp_nthreads,
     N=1,
-    patch_radius=2,
+    patch_radius=4,
     tau_factor=2.3,
     block_radius=5,
     n_iter=10,
